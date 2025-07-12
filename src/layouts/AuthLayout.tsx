@@ -1,9 +1,11 @@
 // layouts/AuthLayout.tsx
 import { Outlet } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
 const AuthLayout = () => {
   return (
-    <div >
+    <div>
+      <Navbar />
       <Outlet />
     </div>
   );

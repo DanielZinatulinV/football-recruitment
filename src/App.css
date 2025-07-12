@@ -8,3 +8,63 @@
 html {
   scroll-behavior: smooth;
 }
+
+body {
+  background: #f9f9fb;
+  font-family: 'Inter', 'Roboto', Arial, sans-serif;
+  color: #18181b;
+  margin: 0;
+  padding: 0;
+}
+
+button {
+  border-radius: 10px;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+button:hover {
+  filter: brightness(0.95);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+  transform: translateY(-2px) scale(1.03);
+}
+
+input, select, textarea {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-family: inherit;
+  font-size: 16px;
+  padding: 10px;
+  outline: none;
+  transition: border 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border: 1.5px solid #2563eb;
+}
+
+@media (max-width: 900px) {
+  .container {
+    max-width: 100% !important;
+    padding: 0 8px !important;
+  }
+  h1 {
+    font-size: 24px !important;
+  }
+  section, .card, .container > div {
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  h1, h2 {
+    font-size: 18px !important;
+  }
+  section, .card, .container > div {
+    padding: 6px !important;
+  }
+}
