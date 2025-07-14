@@ -14,64 +14,31 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleCandidateLogin = async (email: string, password: string) => {
-    setError("");
-    setLoading(true);
-    const saved = localStorage.getItem(CANDIDATE_PROFILE_KEY);
-    if (!saved) {
-      setError("No candidate registered with this email.");
-      setLoading(false);
-      return;
-    }
-    const candidate = JSON.parse(saved);
-    if (candidate.email !== email) {
-      setError("No candidate registered with this email.");
-      setLoading(false);
-      return;
-    }
-    if (candidate.password !== password) {
-      setError("Incorrect password.");
-      setLoading(false);
-      return;
-    }
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/candidate/dashboard");
-    }, 500);
-  };
-
-  const handleTeamLogin = async (email: string, password: string) => {
-    setError("");
-    setLoading(true);
-    const saved = localStorage.getItem(TEAM_PROFILE_KEY);
-    if (!saved) {
-      setError("No team registered with this email.");
-      setLoading(false);
-      return;
-    }
-    const team = JSON.parse(saved);
-    if (team.email !== email) {
-      setError("No team registered with this email.");
-      setLoading(false);
-      return;
-    }
-    if (team.password !== password) {
-      setError("Incorrect password.");
-      setLoading(false);
-      return;
-    }
-    setTimeout(() => {
-      setLoading(false);
-      navigate("/team/dashboard");
-    }, 500);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (role === 'candidate') {
-      await handleCandidateLogin(email, password);
-    } else {
-      await handleTeamLogin(email, password);
+    setError("");
+    setLoading(true);
+    try {
+      const token = await AuthenticationService.loginV1AuthLoginPost({
+        username: email,
+        password,
+      });
+      localStorage.setItem('access_token', token.access_token);
+      OpenAPI.TOKEN = token.access_token;
+      // Получить профиль
+      const user = await AuthenticationService.readUsersMeV1AuthMeGet();
+      localStorage.setItem('current_user', JSON.stringify(user));
+      setLoading(false);
+      if (user.role === 'candidate') {
+        navigate("/candidate/dashboard");
+      } else if (user.role === 'team') {
+        navigate("/team/dashboard");
+      } else {
+        setError("Unknown user role.");
+      }
+    } catch (err: any) {
+      setError(err?.body?.detail || err?.message || "Login failed");
+      setLoading(false);
     }
   };
 

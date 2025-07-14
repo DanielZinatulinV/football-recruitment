@@ -54,6 +54,8 @@ const routes = createBrowserRouter(
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route element={<AuthLayout />} errorElement={<NotFound />}>
+        <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
+        <Route path="/team/dashboard" element={<TeamDashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/settings" element={<AccountSettings />} />

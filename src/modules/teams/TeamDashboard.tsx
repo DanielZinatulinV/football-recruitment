@@ -4,6 +4,12 @@ import EditTeamProfile from "./EditTeamProfile";
 import { useForm } from "react-hook-form";
 import LocationSearch from "../../components/LocationSearch";
 import { Range } from "react-range";
+import { AuthenticationService } from '../../api';
+import type { OutUserSchema } from '../../api';
+import { OpenAPI } from '../../api/core/OpenAPI';
+import { VacanciesService } from '../../api/services/VacanciesService';
+import type { CreateVacancySchema } from '../../api/models/CreateVacancySchema';
+import type { UpdateVacancySchema } from '../../api/models/UpdateVacancySchema';
 
 const TEAM_PROFILE_KEY = "team_profile";
 const TEAM_VACANCIES_KEY = "team_vacancies";
@@ -30,7 +36,20 @@ type Vacancy = {
   expiry: string;
 };
 
-function CreateVacancyForm({ onClose, onAdd, onSave, vacancy }: { onClose: () => void; onAdd?: (vac: Vacancy) => void; onSave?: (vac: Vacancy) => void; vacancy?: Vacancy }) {
+function mapOutVacancyToVacancy(v: any): Vacancy {
+  return {
+    id: String(v.id ?? v.vacancy_id ?? Date.now()),
+    role: v.title || v.role || '',
+    requirements: v.requirements || '',
+    salaryFrom: v.salary_min ? String(v.salary_min) : '',
+    salaryTo: v.salary_max ? String(v.salary_max) : '',
+    location: v.location || '',
+    anyLocation: v.location === 'Remote',
+    expiry: v.expiry_date || v.expiry || '',
+  };
+}
+
+function CreateVacancyForm({ onClose, onAdd, onSave, vacancy }: { onClose: () => void; onAdd?: (vac: CreateVacancySchema) => void; onSave?: (vac: Vacancy) => void; vacancy?: Vacancy }) {
   const isEdit = !!vacancy;
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<{ role: string; requirements: string; salaryFrom: string; salaryTo: string; expiry: string }>({
     defaultValues: isEdit ? {
@@ -55,14 +74,29 @@ function CreateVacancyForm({ onClose, onAdd, onSave, vacancy }: { onClose: () =>
     }
   }, [isEdit, vacancy, setValue]);
   const onSubmit = (data: { role: string; requirements: string; salaryFrom: string; salaryTo: string; expiry: string }) => {
-    const vac: Vacancy = {
-      ...data,
-      id: isEdit && vacancy ? vacancy.id : Date.now().toString(),
-      location: anyLocation ? undefined : location,
-      anyLocation,
+    const vac: CreateVacancySchema = {
+      title: data.role,
+      description: '',
+      requirements: data.requirements,
+      location: anyLocation ? 'Remote' : location,
+      position_type: data.role,
+      experience_level: '',
+      expiry_date: data.expiry,
+      salary_min: data.salaryFrom ? Number(data.salaryFrom) : undefined,
+      salary_max: data.salaryTo ? Number(data.salaryTo) : undefined,
     };
     if (isEdit && onSave) {
-      onSave(vac);
+      // Для onSave преобразуем CreateVacancySchema в Vacancy
+      onSave({
+        id: vacancy?.id || Date.now().toString(),
+        role: vac.title,
+        requirements: vac.requirements,
+        salaryFrom: vac.salary_min ? String(vac.salary_min) : '',
+        salaryTo: vac.salary_max ? String(vac.salary_max) : '',
+        location: vac.location,
+        anyLocation: vac.location === 'Remote',
+        expiry: vac.expiry_date,
+      });
     } else if (onAdd) {
       onAdd(vac);
     }
@@ -140,7 +174,15 @@ function CreateVacancyForm({ onClose, onAdd, onSave, vacancy }: { onClose: () =>
           </div>
           <div>
             <label className="block text-white font-semibold mb-1">Expiry Date</label>
-            <input type="date" {...register("expiry", { required: true })} className="w-full rounded-lg border border-yellow-300 px-3 py-2 text-base mt-1 bg-neutral-800 text-white placeholder-gray-400" />
+            <input type="date" {...register("expiry", { required: true })}
+              value={(() => {
+                // Если редактируем, приводим к yyyy-MM-dd
+                const val = (isEdit && vacancy?.expiry) ? String(vacancy.expiry) : undefined;
+                if (val && val.length >= 10) return val.slice(0, 10);
+                return undefined;
+              })()}
+              onChange={e => setValue("expiry", e.target.value)}
+              className="w-full rounded-lg border border-yellow-300 px-3 py-2 text-base mt-1 bg-neutral-800 text-white placeholder-gray-400" />
             {errors.expiry && <p className="text-red-500 text-sm">Expiry date is required</p>}
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -219,7 +261,9 @@ const initialApplications: Application[] = [
 
 const TeamDashboard = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(defaultProfile);
+  const [profile, setProfile] = useState<OutUserSchema | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [showCreateVacancy, setShowCreateVacancy] = useState(false);
   const [editVacancy, setEditVacancy] = useState<Vacancy | null>(null);
@@ -227,10 +271,27 @@ const TeamDashboard = () => {
   const [applications, setApplications] = useState<Application[]>([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem(TEAM_PROFILE_KEY);
-    if (saved) setProfile(JSON.parse(saved));
-    const v = localStorage.getItem(TEAM_VACANCIES_KEY);
-    if (v) setVacancies(JSON.parse(v));
+    setProfileLoading(true);
+    setProfileError(null);
+    AuthenticationService.readUsersMeV1AuthMeGet()
+      .then(user => {
+        if (user.role !== 'team') {
+          setProfileError('Not a team user.');
+          setProfile(null);
+        } else {
+          setProfile(user);
+        }
+        setProfileLoading(false);
+      })
+      .catch(err => {
+        setProfileError(err?.body?.detail || err?.message || 'Failed to load profile');
+        setProfileLoading(false);
+      });
+    // Загрузка вакансий команды с backend
+    VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet()
+      .then(vacs => setVacancies(vacs.map(mapOutVacancyToVacancy)))
+      .catch(() => setVacancies([]));
+    // Остальной localStorage для shortlist/applications пока оставляем
     const sl = localStorage.getItem(TEAM_SHORTLIST_KEY);
     if (sl) setShortlist(JSON.parse(sl));
     const apps = localStorage.getItem(TEAM_APPLICATIONS_KEY);
@@ -238,16 +299,35 @@ const TeamDashboard = () => {
     else setApplications(initialApplications);
   }, []);
 
-  const handleAddVacancy = (vac: Vacancy) => {
-    const updated = [vac, ...vacancies];
-    setVacancies(updated);
-    localStorage.setItem(TEAM_VACANCIES_KEY, JSON.stringify(updated));
+  const handleAddVacancy = async (vac: CreateVacancySchema) => {
+    try {
+      await VacanciesService.createVacancyV1VacanciesPost(vac);
+      const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+      setVacancies(backendVacancies.map(mapOutVacancyToVacancy));
+    } catch (err: any) {
+      alert('Failed to create vacancy: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
   };
 
-  const handleSaveVacancy = (vac: Vacancy) => {
-    const updated = vacancies.map(v => v.id === vac.id ? vac : v);
-    setVacancies(updated);
-    localStorage.setItem(TEAM_VACANCIES_KEY, JSON.stringify(updated));
+  const handleSaveVacancy = async (vac: Vacancy) => {
+    try {
+      await VacanciesService.updateVacancyV1VacanciesVacancyIdPut(
+        Number(vac.id),
+        {
+          title: vac.role,
+          requirements: vac.requirements,
+          location: vac.location,
+          position_type: vac.role,
+          expiry_date: vac.expiry,
+          salary_min: vac.salaryFrom ? Number(vac.salaryFrom) : undefined,
+          salary_max: vac.salaryTo ? Number(vac.salaryTo) : undefined,
+        }
+      );
+      const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+      setVacancies(backendVacancies.map(mapOutVacancyToVacancy));
+    } catch (err: any) {
+      alert('Failed to update vacancy: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
   };
 
   const handleDeleteVacancy = (id: string) => {
@@ -344,26 +424,38 @@ const TeamDashboard = () => {
       {/* Team Profile Section */}
       <section className="bg-black py-12 px-8">
         <h2 className="text-3xl font-bold text-yellow-300 mb-8 uppercase">Team Profile</h2>
-        <div className="flex flex-wrap gap-10 items-center">
-          <div className="space-y-2 text-white text-lg">
-              <div><b>Club Name:</b> {profile.teamName}</div>
+        {profileLoading ? (
+          <div className="text-yellow-300 text-lg font-bold">Loading profile...</div>
+        ) : profileError ? (
+          <div className="text-red-500 text-lg font-bold">{profileError}</div>
+        ) : profile ? (
+          <div className="flex flex-wrap gap-10 items-center">
+            <div className="space-y-2 text-white text-lg">
+              <div><b>Team Name:</b> {profile.club_name || (profile.first_name + ' ' + profile.last_name)}</div>
               <div><b>Email:</b> {profile.email}</div>
-              <div><b>Website:</b> {profile.website}</div>
-              <div><b>Location:</b> {profile.location}</div>
-              <div><b>Description:</b> {profile.description}</div>
+              <div><b>Location:</b> {profile.location || '-'}</div>
+              <div><b>Position:</b> {profile.position || '-'}</div>
+              <div><b>Experience Level:</b> {profile.experience_level || '-'}</div>
+              <div><b>Qualification:</b> {profile.qualification || '-'}</div>
+              <div><b>Contact Phone:</b> {profile.contact_phone || '-'}</div>
+              <div><b>Status:</b> {profile.is_active ? 'Active' : 'Inactive'}</div>
+              <div><b>Approved:</b> {profile.is_approved ? 'Yes' : 'No'}</div>
+              <div><b>Email Verified:</b> {profile.email_verified ? 'Yes' : 'No'}</div>
             </div>
-            {profile.logo && typeof profile.logo === "object" && profile.logo.name && (
+            {/* Логотип, если есть */}
+            {profile.logo_file_path && (
               <div className="ml-auto">
                 <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                  <span className="text-gray-400 text-xs">{profile.logo.name}</span>
+                  <img src={profile.logo_file_path} alt="Logo" className="object-cover w-full h-full" />
                 </div>
               </div>
             )}
-          <button className="rounded px-6 py-3 bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition" onClick={() => navigate('/team/profile/edit')}>
-            Edit Profile
-          </button>
+            <button className="rounded px-6 py-3 bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition" onClick={() => navigate('/team/profile/edit')}>
+              Edit Profile
+            </button>
           </div>
-        </section>
+        ) : null}
+      </section>
 
       {/* Divider */}
       <div className="w-full h-6 bg-yellow-300" style={{ transform: 'skewY(-3deg)' }}></div>
@@ -390,7 +482,7 @@ const TeamDashboard = () => {
                       <div className="text-gray-500 text-xs mt-1">{salaryStr && <>Salary: {salaryStr} | </>}{locationStr && <>Location: {locationStr} | </>}Expiry: {vac.expiry}</div>
                     </div>
                     <div className="flex gap-2">
-                    <button className="px-3 py-1 rounded bg-yellow-300 text-black text-sm font-bold hover:bg-yellow-400 transition" onClick={() => setEditVacancy(vac)}>Edit</button>
+                    <button className="px-3 py-1 rounded bg-yellow-300 text-black text-sm font-bold hover:bg-yellow-400 transition" onClick={() => { setEditVacancy(vac); setShowCreateVacancy(true); }}>Edit</button>
                       <button className="px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600" onClick={() => handleDeleteVacancy(vac.id)}>Delete</button>
                     </div>
                   </div>
@@ -399,10 +491,12 @@ const TeamDashboard = () => {
             </div>
           )}
           {showCreateVacancy && (
-            <CreateVacancyForm onClose={() => setShowCreateVacancy(false)} onAdd={handleAddVacancy} />
-          )}
-          {editVacancy && (
-            <CreateVacancyForm onClose={() => setEditVacancy(null)} onSave={handleSaveVacancy} vacancy={editVacancy} />
+            <CreateVacancyForm
+              onClose={() => { setShowCreateVacancy(false); setEditVacancy(null); }}
+              onAdd={handleAddVacancy}
+              onSave={handleSaveVacancy}
+              vacancy={editVacancy || undefined}
+            />
           )}
         </section>
 
