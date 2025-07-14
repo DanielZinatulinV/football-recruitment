@@ -64,10 +64,23 @@ const CandidateRegister = () => {
     };
     registerCandidate.mutate(payload, {
       onSuccess: () => {
-        navigate("/payment");
+        setError('');
+        navigate(`/verify-email?email=${encodeURIComponent(formValues.email)}`);
       },
-      onError: (err) => {
-        console.error("Failed to register candidate:", err);
+      onError: (err: any) => {
+        let msg = 'Registration failed';
+        if (err?.response?.data) {
+          if (typeof err.response.data === 'string') {
+            msg = err.response.data;
+          } else if (err.response.data.detail) {
+            msg = err.response.data.detail;
+          } else if (err.response.data.message) {
+            msg = err.response.data.message;
+          }
+        } else if (err?.message) {
+          msg = err.message;
+        }
+        setError(msg);
       },
     });
   };
@@ -391,10 +404,13 @@ const CandidateRegister = () => {
                   </div>
                 )}
               </div>
+              {error && (
+                <div className="text-red-500 text-center font-semibold text-base mb-2">{error}</div>
+              )}
               <button
                 type="submit"
                 disabled={!selectedPlan}
-                className="w-full bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-lg px-6 py-3 flex items-center justify-center mt-4 transition disabled:opacity-50"
+                className="w-full cursor-pointer bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-lg px-6 py-3 flex items-center justify-center mt-4 transition disabled:opacity-50"
               >
                 Complete Registration <ArrowRight className="ml-2 w-4 h-4" />
               </button>

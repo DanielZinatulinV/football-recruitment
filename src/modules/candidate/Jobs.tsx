@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { Star, Group, EmojiEvents } from '@mui/icons-material';
+import Footer from '../../components/Footer';
 
-const jobData = [
+const mockJobs = [
   { title: "Scout Assistant", club: "FC Academy" },
   { title: "Video Analyst", club: "United Youth" },
   { title: "Technical Director", club: "Premier SC" },
@@ -14,52 +14,65 @@ const jobData = [
   { title: "Medical Assistant", club: "White Eagles" },
 ];
 
-const ITEMS_VISIBLE = 6;
-const SCROLL_COUNT = 2;
-
-export default function JobTicker() {
-  const [visibleJobs, setVisibleJobs] = useState(
-    jobData.slice(0, ITEMS_VISIBLE)
-  );
-  const [queueIndex, setQueueIndex] = useState(ITEMS_VISIBLE);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setVisibleJobs((prev) => {
-        const newList = [...prev.slice(SCROLL_COUNT)];
-        const nextItems: any[] = [];
-
-        for (let i = 0; i < SCROLL_COUNT; i++) {
-          nextItems.push(jobData[(queueIndex + i) % jobData.length]);
-        }
-
-        setQueueIndex(
-          (prevIndex) => (prevIndex + SCROLL_COUNT) % jobData.length
-        );
-        return [...newList, ...nextItems];
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [queueIndex]);
-
+export default function HomePage() {
   return (
-    <div className="overflow-hidden h-72 relative w-full">
-      <motion.div
-        key={queueIndex}
-        initial={{ y: 10 }}
-        animate={{ y: -85 }}
-        exit={{ y: -80 }}
-        transition={{ duration: 0.8 }}
-        className="grid grid-cols-2 grid-rows-3 gap-4"
-      >
-        {visibleJobs.map((job, i) => (
-          <div key={i} className="bg-gray-800 text-white p-4 rounded-lg shadow">
-            <h4 className="text-lg font-semibold">{job.title}</h4>
-            <p className="text-sm opacity-70">{job.club}</p>
+    <div className="min-h-screen bg-black flex flex-col">
+      {/* Hero Section */}
+      <section className="relative h-[480px] flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/assets/football.svg')" }}>
+        <div className="absolute inset-0 bg-black/80"></div>
+        <div className="relative z-10 text-center px-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold uppercase text-white mb-6 drop-shadow-lg">
+            Build Your <span className="text-yellow-300">Football</span> Career
+          </h1>
+          <p className="text-lg md:text-2xl text-white mb-8 max-w-2xl mx-auto">
+            The #1 platform for football jobs and talent. Find your next role or discover top professionals for your club.
+          </p>
+          <div className="flex flex-col md:flex-row gap-4 justify-center">
+            <a href="/jobs" className="px-8 py-4 rounded-lg bg-yellow-300 text-black font-bold text-lg uppercase shadow hover:bg-yellow-400 transition">Find Jobs</a>
+            <a href="/register" className="px-8 py-4 rounded-lg bg-black text-yellow-300 font-bold text-lg uppercase border-2 border-yellow-300 hover:bg-yellow-300 hover:text-black transition">Sign Up</a>
           </div>
-        ))}
-      </motion.div>
+        </div>
+      </section>
+      {/* Divider */}
+      <div className="w-full h-6 bg-yellow-300" style={{ transform: 'skewY(-3deg)' }}></div>
+
+      {/* Why Join Section */}
+      <section className="w-full max-w-4xl mx-auto py-16 px-4">
+        <h2 className="text-3xl font-bold text-yellow-300 mb-10 uppercase text-center tracking-wide">Why Join?</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
+            <Star className="text-yellow-300 mb-2" style={{ fontSize: 40 }} />
+            <div className="font-bold text-black text-lg mb-1">Elite Network</div>
+            <div className="text-gray-700 text-sm text-center">Connect with top clubs, teams, and professionals in the football industry.</div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
+            <Group className="text-yellow-300 mb-2" style={{ fontSize: 40 }} />
+            <div className="font-bold text-black text-lg mb-1">Career Growth</div>
+            <div className="text-gray-700 text-sm text-center">Access exclusive job opportunities and grow your career in sport.</div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-8 flex flex-col items-center">
+            <EmojiEvents className="text-yellow-300 mb-2" style={{ fontSize: 40 }} />
+            <div className="font-bold text-black text-lg mb-1">Showcase Talent</div>
+            <div className="text-gray-700 text-sm text-center">Build your profile or club page and get noticed by the best in the game.</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Latest Jobs Section */}
+      <section className="w-full max-w-4xl mx-auto pb-16 px-4">
+        <h2 className="text-2xl font-bold text-white mb-8 uppercase text-center tracking-wide">Latest Jobs</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {mockJobs.slice(0, 6).map((job, i) => (
+            <div key={i} className="bg-white rounded-xl shadow p-6 flex flex-col gap-2">
+              <div className="font-bold text-lg text-black">{job.title}</div>
+              <div className="text-yellow-400 font-semibold">{job.club}</div>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center mt-8">
+          <a href="/jobs" className="px-8 py-3 rounded-lg bg-yellow-300 text-black font-bold text-lg uppercase shadow hover:bg-yellow-400 transition">See All Jobs</a>
+        </div>
+      </section>
     </div>
   );
 }

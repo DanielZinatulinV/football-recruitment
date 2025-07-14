@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const ADMIN_PROFILE_KEY = "admin_profile";
+import { AuthenticationService } from '../../api';
+import { VacanciesService } from '../../api';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -9,39 +9,47 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [vacanciesResult, setVacanciesResult] = useState<string | null>(null);
+  const [vacanciesLoading, setVacanciesLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    // Мок-проверка по localStorage
-    // const saved = localStorage.getItem(ADMIN_PROFILE_KEY);
-    const saved = {
-      email: "admin@example.com",
-      password: "admin123"
-    };
-    if (!saved) {
-      setError("No admin registered with this email.");
-      setLoading(false);
-      return;
-    }
-    // const admin = JSON.parse(saved);
-    const admin = saved;
-    if (admin.email !== email) {
-      setError("No admin registered with this email.");
-      setLoading(false);
-      return;
-    }
-    if (admin.password !== password) {
-      setError("Incorrect password.");
-      setLoading(false);
-      return;
-    }
-    // Успешный вход — переход на Admin Dashboard (заглушка)
-    setTimeout(() => {
+    try {
+      // 1. Логин через API
+      const token = await AuthenticationService.loginV1AuthLoginPost({
+        username: email,
+        password,
+      });
+      localStorage.setItem('access_token', token.access_token);
+      // 2. Получить профиль
+      const user = await AuthenticationService.readUsersMeV1AuthMeGet();
+      if (user.role !== 'admin') {
+        setError('You are not an admin.');
+        setLoading(false);
+        return;
+      }
+      localStorage.setItem('current_user', JSON.stringify(user));
       setLoading(false);
       navigate("/admin/dashboard");
-    }, 500);
+    } catch (err: any) {
+      setError(err?.body?.detail || err?.message || 'Login failed');
+      setLoading(false);
+    }
+  };
+
+  const handleTestVacancies = async () => {
+    setVacanciesResult(null);
+    setVacanciesLoading(true);
+    try {
+      const data = await VacanciesService.listVacanciesV1VacanciesGet();
+      setVacanciesResult(JSON.stringify(data, null, 2));
+    } catch (err: any) {
+      setVacanciesResult('Error: ' + (err?.body?.detail || err?.message || 'Request failed'));
+    } finally {
+      setVacanciesLoading(false);
+    }
   };
 
   return (
@@ -91,6 +99,17 @@ const AdminLogin = () => {
           </div>
           {error && <div className="text-red-500 text-sm text-center mt-2">{error}</div>}
         </form>
+        <button
+          type="button"
+          className="mt-6 w-full bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-lg px-6 py-3 flex items-center justify-center transition text-lg"
+          onClick={handleTestVacancies}
+          disabled={vacanciesLoading}
+        >
+          {vacanciesLoading ? 'Testing Vacancies API...' : 'Test Vacancies API'}
+        </button>
+        {vacanciesResult && (
+          <pre className="mt-4 bg-gray-100 rounded p-3 text-xs overflow-x-auto max-h-60">{vacanciesResult}</pre>
+        )}
       </div>
     </div>
   );

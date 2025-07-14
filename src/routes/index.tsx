@@ -21,6 +21,9 @@ import CandidateProfileView from '../modules/candidate/CandidateProfileView';
 import TeamInbox from '../modules/teams/TeamInbox';
 import Inbox from '../modules/inbox/Inbox';
 import JobDetails from '../modules/candidate/JobDetails';
+import Payment from '../modules/payment/Payment';
+import VerifyEmail from '../modules/auth/VerifyEmail';
+import Dashboard from '../modules/candidate/Dashboard';
 const TeamDashboard = lazyLoad(() => import("../modules/teams/TeamDashboard"));
 
 const TeamRegister = lazyLoad(() => import("../modules/teams/TeamRegister"));
@@ -55,12 +58,11 @@ const routes = createBrowserRouter(
         <Route path="/register" element={<Register />} />
         <Route path="/settings" element={<AccountSettings />} />
         <Route path="/inbox" element={<Inbox />} />
-        <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/candidate/profile/edit" element={<EditCandidateProfile />} />
         <Route path="/candidate/register" element={<CandidateRegister />} />
         <Route path="/team/register" element={<TeamRegister />} />
         <Route path="/team/pending" element={<PendingApproval />} />
-        <Route path="/team/dashboard" element={<TeamDashboard />} />
         <Route path="/team/profile/edit" element={<EditTeamProfile />} />
         <Route path="/team/candidate/:id" element={<CandidateProfileView />} />
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -69,6 +71,8 @@ const routes = createBrowserRouter(
         <Route path="/admin/import" element={<CandidateImport />} />
         <Route path="/admin/revenue" element={<RevenueReports />} />
         <Route path="/admin/terms" element={<TermsPrivacyManagement />} />
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </>
