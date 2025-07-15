@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthenticationService } from '../../api';
 import { OpenAPI } from '../../api';
+import { useAppDispatch } from '../../redux/store';
+import { setUser } from '../../redux/slices/auth.slice';
 
 const CANDIDATE_PROFILE_KEY = "candidate_profile";
 const TEAM_PROFILE_KEY = "team_profile";
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [role, setRole] = useState<'candidate' | 'team'>('candidate');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,6 +31,7 @@ const Login = () => {
       // Получить профиль
       const user = await AuthenticationService.readUsersMeV1AuthMeGet();
       localStorage.setItem('current_user', JSON.stringify(user));
+      dispatch(setUser(user));
       setLoading(false);
       if (user.role === 'candidate') {
         navigate("/candidate/dashboard");
@@ -76,32 +80,32 @@ const Login = () => {
       <div className="w-full max-w-2xl mb-16">
         <div className="bg-white rounded-2xl shadow-xl p-10">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
+          <div>
               <label htmlFor="email" className="block text-black font-semibold mb-1">Email</label>
-              <input
-                id="email"
-                type="email"
+            <input
+              id="email"
+              type="email"
                 className="w-full border-2 border-yellow-300 rounded-lg px-3 py-2 focus:outline-none bg-neutral-100 text-black placeholder-gray-400"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                autoComplete="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              autoComplete="email"
                 placeholder="Enter your email"
-              />
-            </div>
-            <div>
+            />
+          </div>
+          <div>
               <label htmlFor="password" className="block text-black font-semibold mb-1">Password</label>
-              <input
-                id="password"
-                type="password"
+            <input
+              id="password"
+              type="password"
                 className="w-full border-2 border-yellow-300 rounded-lg px-3 py-2 focus:outline-none bg-neutral-100 text-black placeholder-gray-400"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
                 placeholder="Enter your password"
-              />
-            </div>
+            />
+          </div>
             <button
               type="submit"
               className="w-full bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-lg px-6 py-3 flex items-center justify-center transition disabled:opacity-50"
@@ -109,8 +113,8 @@ const Login = () => {
             >
               {loading ? "Logging in..." : "Login"}
             </button>
-            {error && <div className="text-red-500 text-sm text-center mt-2">{error}</div>}
-          </form>
+          {error && <div className="text-red-500 text-sm text-center mt-2">{error}</div>}
+        </form>
           <div className="mt-8 text-center text-sm text-gray-500">
             {role === 'candidate' ? (
               <>
@@ -124,13 +128,13 @@ const Login = () => {
               </>
             ) : (
               <>
-                Don’t have a team account?{' '}
-                <button
+          Don’t have a team account?{' '}
+          <button
                   className="text-yellow-400 hover:underline font-bold"
-                  onClick={() => navigate("/team/register")}
-                >
-                  Register your team
-                </button>
+            onClick={() => navigate("/team/register")}
+          >
+            Register your team
+          </button>
               </>
             )}
           </div>

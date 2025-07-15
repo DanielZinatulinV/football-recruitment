@@ -1,64 +1,67 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { ApplicationsService } from '../../api/services/ApplicationsService';
+import { VacanciesService } from '../../api/services/VacanciesService';
 
-const mockJobs = [
-  {
-    id: 1,
-    title: 'Marketer',
-    company: 'FC Digital United',
-    level: 'Middle',
-    location: 'Moscow',
-    salary: 90000,
-    requirements: 'Experience in digital marketing, SMM knowledge, analytics',
-    date: '2024-06-01',
-    contact: 'hr@digitalunited.com',
-    description: 'We are looking for a talented marketer to join our digital team. You will be responsible for SMM, analytics, and campaign management.'
-  },
-  {
-    id: 2,
-    title: 'Designer',
-    company: 'FC Creative Stars',
-    level: 'Junior',
-    location: 'Saint Petersburg',
-    salary: 70000,
-    requirements: 'Figma, Adobe, project portfolio',
-    date: '2024-05-28',
-    contact: 'jobs@creativestars.com',
-    description: 'Join our creative team as a junior designer. Portfolio required. Work on branding and matchday graphics.'
-  },
-  {
-    id: 3,
-    title: 'Event Manager',
-    company: 'FC Event Pro',
-    level: 'Senior',
-    location: 'Kazan',
-    salary: 120000,
-    requirements: 'Organizing sports events, communications',
-    date: '2024-05-20',
-    contact: 'events@eventpro.com',
-    description: 'Lead the organization of major sports events. Experience in event management and communication skills required.'
-  },
-  {
-    id: 4,
-    title: 'Copywriter',
-    company: 'FC Media Team',
-    level: 'Middle',
-    location: 'Moscow',
-    salary: 80000,
-    requirements: 'Portfolio of texts, experience in sports theme',
-    date: '2024-05-18',
-    contact: 'media@fcteam.com',
-    description: 'Write engaging copy for our media team. Sports experience is a plus.'
-  },
-];
+
+const formatSalary = (min: string | null | undefined, max: string | null | undefined) => {
+  if (min && max) return `from ${min}$ to ${max}$`;
+  if (min) return `from ${min}$`;
+  if (max) return `to ${max}$`;
+  return '';
+};
 
 const JobDetails: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const job = mockJobs.find(j => String(j.id) === String(id));
+  const [job, setJob] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // --- Новое состояние для отклика ---
+  // const [coverLetter, setCoverLetter] = useState('');
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
-  if (!job) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-white text-xl">Vacancy not found</div>;
+  useEffect(() => {
+    const fetchJob = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const vacancy = await VacanciesService.getVacancyV1VacanciesVacancyIdGet(Number(id));
+        setJob(vacancy);
+      } catch (e: any) {
+        setError(e?.body?.detail || e?.message || 'Vacancy not found');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJob();
+  }, [id]);
+
+  const handleApply = async () => {
+    setApplyLoading(true);
+    setApplyError(null);
+    setSuccess(null);
+    try {
+      await ApplicationsService.applyToVacancyV1ApplicationsPost({
+        vacancy_id: Number(id),
+        // cover_letter: coverLetter || undefined, // закомментировано по бизнес-спецификации
+      });
+      setSuccess('You have successfully applied for this job!');
+      // setCoverLetter('');
+    } catch (e: any) {
+      setApplyError(e?.body?.detail || e?.message || 'Error while applying.');
+    } finally {
+      setApplyLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-yellow-300 text-xl">Loading...</div>;
+  }
+  if (error || !job) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white text-xl">{error || 'Vacancy not found'}</div>;
   }
 
   return (
@@ -70,17 +73,39 @@ const JobDetails: React.FC = () => {
         <h1 className="text-3xl font-extrabold text-black mb-2 uppercase">
           {job.title}
         </h1>
-        <div className="text-yellow-400 font-bold text-lg mb-2">{job.company}</div>
-        <div className="text-gray-700 text-base mb-2">{job.location} • {job.level} • {job.salary.toLocaleString()}₽</div>
-        <div className="text-gray-400 text-sm mb-4">Posted: {job.date}</div>
+        <div className="text-yellow-400 font-bold text-lg mb-2">Team #{job.team_id}</div>
+        <div className="text-gray-700 text-base mb-2">{job.location} • {job.experience_level} • {formatSalary(job.salary_min, job.salary_max)}</div>
+        <div className="text-gray-400 text-sm mb-4">Published: {job.created_at?.slice(0,10)}</div>
         <div className="mb-6">
           <h2 className="text-xl font-bold text-black mb-2">Requirements</h2>
           <div className="text-black mb-2">{job.requirements}</div>
           <h2 className="text-xl font-bold text-black mb-2 mt-4">Description</h2>
           <div className="text-black mb-2">{job.description}</div>
         </div>
+        {/* --- Новая форма отклика --- */}
         <div className="flex flex-col md:flex-row gap-4 mt-8">
-          <button className="rounded-lg px-8 py-3 bg-yellow-300 text-black font-bold border-2 border-yellow-300 hover:bg-yellow-400 transition text-lg w-full md:w-auto">Apply</button>
+          {/*
+          <div className="flex-1">
+            <textarea
+              className="w-full border border-black rounded-lg p-3 mb-2 min-h-[80px]"
+              placeholder="Cover letter (optional)"
+              value={coverLetter}
+              onChange={e => setCoverLetter(e.target.value)}
+              disabled={applyLoading}
+            />
+            {success && <div className="text-green-600 font-bold mb-2">{success}</div>}
+            {applyError && <div className="text-red-600 font-bold mb-2">{applyError}</div>}
+          </div>
+          */}
+          {success && <div className="text-green-600 font-bold mb-2">{success}</div>}
+          {applyError && <div className="text-red-600 font-bold mb-2">{applyError}</div>}
+          <button
+            className="rounded-lg px-8 py-3 bg-yellow-300 text-black font-bold border-2 border-yellow-300 hover:bg-yellow-400 transition text-lg w-full md:w-auto disabled:opacity-60"
+            onClick={handleApply}
+            disabled={applyLoading}
+          >
+            {applyLoading ? 'Applying...' : 'Apply'}
+          </button>
         </div>
       </div>
     </div>

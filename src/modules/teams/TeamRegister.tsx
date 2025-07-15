@@ -10,38 +10,38 @@ import {
 import { Box, Button, Card, InputLabel, TextField } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { teamSchema, type TeamRegisterSchema } from "../../schemas/team.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import LocationSearch from "../../components/LocationSearch";
 import useRegisterTeam from "./hooks/use-register-team";
 import { useState } from "react";
 
-const accountInformation: (keyof TeamRegisterSchema)[] = ["email", "password"];
-
-const teamInformation: (keyof TeamRegisterSchema)[] = [
-  "teamName",
-  "website",
-  "location",
-];
+// Новый тип для формы
+interface TeamRegisterForm {
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
+  club_name: string;
+  contact_phone?: string;
+  location?: string;
+}
 
 const TeamRegister = () => {
   const navigate = useNavigate();
   const registerTeam = useRegisterTeam();
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
   const [agreeError, setAgreeError] = useState<string | null>(null);
 
-  const methods = useForm<TeamRegisterSchema>({
-    resolver: zodResolver(teamSchema),
+  const methods = useForm<TeamRegisterForm>({
     mode: "onTouched",
     defaultValues: {
+      first_name: "",
+      last_name: "",
       email: "",
       password: "",
-      teamName: "",
+      club_name: "",
+      contact_phone: "",
       location: "",
-      description: "",
-      logo: null,
     },
   });
 
@@ -54,7 +54,17 @@ const TeamRegister = () => {
       return;
     }
     const formData = methods.getValues();
-    registerTeam.mutate(formData, {
+    const payload = {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      email: formData.email,
+      role: 'team',
+      password: formData.password,
+      club_name: formData.club_name,
+      contact_phone: formData.contact_phone || null,
+      // location не входит в openapi, если нужно — можно добавить
+    };
+    registerTeam.mutate(payload, {
       onSuccess: () => {
         navigate("/team/pending");
       },
@@ -62,7 +72,7 @@ const TeamRegister = () => {
         console.error("Failed to register team:", err);
       },
     });
-    console.log("Team Registration Data:", formData);
+    console.log("Team Registration Data:", payload);
   };
 
   return (
@@ -88,9 +98,45 @@ const TeamRegister = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <TextField
+                    id="first_name"
+                    label="First Name"
+                    {...methods.register("first_name", { required: true })}
+                    placeholder="Enter first name"
+                    fullWidth
+                    variant="outlined"
+                    margin="dense"
+                    sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
+                  />
+                  {methods.formState.errors.first_name && (
+                    <p className="text-red-500 text-sm">
+                      {methods.formState.errors.first_name.message || 'First name is required'}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <TextField
+                    id="last_name"
+                    label="Last Name"
+                    {...methods.register("last_name", { required: true })}
+                    placeholder="Enter last name"
+                    fullWidth
+                    variant="outlined"
+                    margin="dense"
+                    sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
+                  />
+                  {methods.formState.errors.last_name && (
+                    <p className="text-red-500 text-sm">
+                      {methods.formState.errors.last_name.message || 'Last name is required'}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <TextField
                     id="email"
                     label="Email Address"
-                    {...methods.register("email")}
+                    {...methods.register("email", { required: true })}
                     placeholder="Enter your email address"
                     fullWidth
                     variant="outlined"
@@ -99,7 +145,7 @@ const TeamRegister = () => {
                   />
                   {methods.formState.errors.email && (
                     <p className="text-red-500 text-sm">
-                      {methods.formState.errors.email.message}
+                      {methods.formState.errors.email.message || 'Email is required'}
                     </p>
                   )}
                 </div>
@@ -107,7 +153,7 @@ const TeamRegister = () => {
                   <TextField
                     id="password"
                     label="Password"
-                    {...methods.register("password")}
+                    {...methods.register("password", { required: true })}
                     type="password"
                     placeholder="Enter your password"
                     fullWidth
@@ -117,143 +163,44 @@ const TeamRegister = () => {
                   />
                   {methods.formState.errors.password && (
                     <p className="text-red-500 text-sm">
-                      {methods.formState.errors.password.message}
+                      {methods.formState.errors.password.message || 'Password is required'}
                     </p>
                   )}
                 </div>
               </div>
               <div className="space-y-2">
                 <TextField
-                  id="teamName"
+                  id="club_name"
                   label="Club Name"
-                  {...methods.register("teamName")}
+                  {...methods.register("club_name", { required: true })}
                   placeholder="Enter your club name"
                   fullWidth
                   variant="outlined"
                   margin="dense"
                   sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
                 />
-                {methods.formState.errors.teamName && (
+                {methods.formState.errors.club_name && (
                   <p className="text-red-500 text-sm">
-                    {methods.formState.errors.teamName.message}
+                    {methods.formState.errors.club_name.message || 'Club name is required'}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 <TextField
-                  id="website"
-                  label="Website"
-                  {...methods.register("website")}
-                  placeholder="Enter your website"
+                  id="contact_phone"
+                  label="Contact Phone (optional)"
+                  {...methods.register("contact_phone")}
+                  placeholder="Enter contact phone"
                   fullWidth
                   variant="outlined"
                   margin="dense"
                   sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
                 />
-                {methods.formState.errors.website && (
-                  <p className="text-red-500 text-sm">
-                    {methods.formState.errors.website.message}
-                  </p>
-                )}
               </div>
+              {/* location можно оставить как дополнительное поле, если нужно */}
               <div className="space-y-2">
                 <LocationSearch
                   onSelect={(value) => methods.setValue("location", value)}
-                />
-                {methods.formState.errors.location && (
-                  <p className="text-red-500 text-sm">
-                    {methods.formState.errors.location.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <TextField
-                  id="description"
-                  label="Description"
-                  {...methods.register("description")}
-                  placeholder="Enter your description"
-                  fullWidth
-                  variant="outlined"
-                  multiline
-                  rows={4}
-                  sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
-                />
-                {methods.formState.errors.description && (
-                  <p className="text-red-500 text-sm">
-                    {methods.formState.errors.description.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Controller
-                  name="logo"
-                  control={methods.control}
-                  render={({ field, fieldState }) => (
-                    <div className="space-y-2">
-                      <InputLabel htmlFor="logo" className="text-black font-semibold">Upload Logo</InputLabel>
-                      <div
-                        className={`border-2 border-dashed border-black rounded-lg text-center transition-colors cursor-pointer ${isDragOver ? "border-yellow-400 bg-yellow-50" : "hover:border-yellow-400"}`}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setIsDragOver(true);
-                        }}
-                        onDragLeave={() => setIsDragOver(false)}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          setIsDragOver(false);
-                          const file = e.dataTransfer.files && e.dataTransfer.files[0];
-                          if (file) {
-                            const validTypes = ["image/png", "image/jpeg", "image/jpg"];
-                            const validExts = [".png", ".jpg", ".jpeg"];
-                            const fileName = file.name.toLowerCase();
-                            const isValid = validTypes.includes(file.type) || validExts.some(ext => fileName.endsWith(ext));
-                            if (!isValid) {
-                              setFileError("Only PNG, JPG, JPEG files are allowed.");
-                              return;
-                            }
-                            setFileError(null);
-                            field.onChange(file);
-                          }
-                        }}
-                      >
-                        <input
-                          type="file"
-                          id="logo"
-                          accept=".png,.jpg,.jpeg"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            if (file) {
-                              const validTypes = ["image/png", "image/jpeg", "image/jpg"];
-                              const validExts = [".png", ".jpg", ".jpeg"];
-                              const fileName = file.name.toLowerCase();
-                              const isValid = validTypes.includes(file.type) || validExts.some(ext => fileName.endsWith(ext));
-                              if (!isValid) {
-                                setFileError("Only PNG, JPG, JPEG files are allowed.");
-                                return;
-                              }
-                              setFileError(null);
-                              field.onChange(file);
-                            } else {
-                              setFileError(null);
-                              field.onChange(null);
-                            }
-                          }}
-                          className="hidden"
-                        />
-                        <label htmlFor="logo" className="cursor-pointer p-6 block">
-                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-600">
-                            {field.value?.name
-                              ? field.value.name
-                              : "Click or drag and drop your Logo (PNG, JPG, JPEG)"}
-                          </p>
-                        </label>
-                      </div>
-                      {fileError && (
-                        <p className="text-red-500 text-sm mt-1">{fileError}</p>
-                      )}
-                    </div>
-                  )}
                 />
               </div>
               <div className="bg-white rounded-2xl shadow p-6 mt-6">

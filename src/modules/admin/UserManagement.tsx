@@ -173,7 +173,28 @@ const UserManagement = () => {
               {modalUser.club_name && <div><b>Club Name:</b> {modalUser.club_name}</div>}
               {modalUser.contact_phone && <div><b>Contact Phone:</b> {modalUser.contact_phone}</div>}
             </div>
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-6 gap-2">
+              {modalUser.role === 'team' && !modalUser.is_approved && (
+                <button
+                  className="px-6 py-2 rounded bg-green-600 text-white font-bold hover:bg-green-700 transition disabled:opacity-60"
+                  disabled={!!actionLoading[modalUser.id]}
+                  onClick={async () => {
+                    setActionError(null);
+                    setActionLoading((prev) => ({ ...prev, [modalUser.id]: true }));
+                    try {
+                      const updated = await AdminService.approveTeamV1AdminTeamsTeamIdApprovePost(modalUser.id);
+                      setUsers(users => users.map(u => u.id === modalUser.id ? updated : u));
+                      setModalUser(updated);
+                    } catch (err: any) {
+                      setActionError(err?.body?.detail || err?.message || 'Failed to approve team');
+                    } finally {
+                      setActionLoading((prev) => ({ ...prev, [modalUser.id]: false }));
+                    }
+                  }}
+                >
+                  {actionLoading[modalUser.id] ? 'Approving...' : 'Approve'}
+                </button>
+              )}
               <button className="px-6 py-2 rounded bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition" onClick={closeModal}>Close</button>
             </div>
           </div>

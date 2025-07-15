@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import EditTeamProfile from "./EditTeamProfile";
-import { useForm } from "react-hook-form";
-import LocationSearch from "../../components/LocationSearch";
+import CreateVacancyForm from "./components/CreateVacancyForm";
 import { Range } from "react-range";
-import { AuthenticationService } from '../../api';
 import type { OutUserSchema } from '../../api';
 import { OpenAPI } from '../../api/core/OpenAPI';
 import { VacanciesService } from '../../api/services/VacanciesService';
+import { ApplicationsService } from '../../api/services/ApplicationsService';
+import { CandidatesService } from '../../api/services/CandidatesService';
+import type { OutApplicationSchema } from '../../api/models/OutApplicationSchema';
+import type { OutVacancySchema } from '../../api/models/OutVacancySchema';
+import type { ApplicationStatus as ApiApplicationStatus } from '../../api/models/ApplicationStatus';
 import type { CreateVacancySchema } from '../../api/models/CreateVacancySchema';
 import type { UpdateVacancySchema } from '../../api/models/UpdateVacancySchema';
+import { useAppSelector } from '../../redux/store';
 
 const TEAM_PROFILE_KEY = "team_profile";
 const TEAM_VACANCIES_KEY = "team_vacancies";
@@ -34,6 +37,9 @@ type Vacancy = {
   location?: string;
   anyLocation?: boolean;
   expiry: string;
+  description?: string;
+  experience_level?: string;
+  status?: string;
 };
 
 function mapOutVacancyToVacancy(v: any): Vacancy {
@@ -46,153 +52,10 @@ function mapOutVacancyToVacancy(v: any): Vacancy {
     location: v.location || '',
     anyLocation: v.location === 'Remote',
     expiry: v.expiry_date || v.expiry || '',
+    description: v.description || '',
+    experience_level: v.experience_level || '',
+    status: v.status || 'active',
   };
-}
-
-function CreateVacancyForm({ onClose, onAdd, onSave, vacancy }: { onClose: () => void; onAdd?: (vac: CreateVacancySchema) => void; onSave?: (vac: Vacancy) => void; vacancy?: Vacancy }) {
-  const isEdit = !!vacancy;
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<{ role: string; requirements: string; salaryFrom: string; salaryTo: string; expiry: string }>({
-    defaultValues: isEdit ? {
-      role: vacancy?.role || "",
-      requirements: vacancy?.requirements || "",
-      salaryFrom: vacancy?.salaryFrom || "",
-      salaryTo: vacancy?.salaryTo || "",
-      expiry: vacancy?.expiry || "",
-    } : undefined
-  });
-  const [location, setLocation] = useState(vacancy?.location || "");
-  const [anyLocation, setAnyLocation] = useState(!!vacancy?.anyLocation);
-  useEffect(() => {
-    if (isEdit && vacancy) {
-      setValue("role", vacancy.role || "");
-      setValue("requirements", vacancy.requirements || "");
-      setValue("salaryFrom", vacancy.salaryFrom || "");
-      setValue("salaryTo", vacancy.salaryTo || "");
-      setValue("expiry", vacancy.expiry || "");
-      setLocation(vacancy.location || "");
-      setAnyLocation(!!vacancy.anyLocation);
-    }
-  }, [isEdit, vacancy, setValue]);
-  const onSubmit = (data: { role: string; requirements: string; salaryFrom: string; salaryTo: string; expiry: string }) => {
-    const vac: CreateVacancySchema = {
-      title: data.role,
-      description: '',
-      requirements: data.requirements,
-      location: anyLocation ? 'Remote' : location,
-      position_type: data.role,
-      experience_level: '',
-      expiry_date: data.expiry,
-      salary_min: data.salaryFrom ? Number(data.salaryFrom) : undefined,
-      salary_max: data.salaryTo ? Number(data.salaryTo) : undefined,
-    };
-    if (isEdit && onSave) {
-      // Для onSave преобразуем CreateVacancySchema в Vacancy
-      onSave({
-        id: vacancy?.id || Date.now().toString(),
-        role: vac.title,
-        requirements: vac.requirements,
-        salaryFrom: vac.salary_min ? String(vac.salary_min) : '',
-        salaryTo: vac.salary_max ? String(vac.salary_max) : '',
-        location: vac.location,
-        anyLocation: vac.location === 'Remote',
-        expiry: vac.expiry_date,
-      });
-    } else if (onAdd) {
-      onAdd(vac);
-    }
-    reset();
-    setLocation("");
-    setAnyLocation(false);
-    onClose();
-  };
-  return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-neutral-900 rounded-2xl shadow-xl p-10 w-full max-w-md border-2 border-yellow-300 relative">
-        <button className="absolute top-3 right-3 text-gray-400 hover:text-yellow-300 text-2xl" onClick={onClose}>&times;</button>
-        <h2 className="text-2xl font-extrabold text-white mb-8 text-center uppercase">
-          {isEdit ? <><span className="text-yellow-300">Edit</span> Vacancy</> : <><span className="text-yellow-300">Create</span> Vacancy</>}
-        </h2>
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <label className="block text-white font-semibold mb-1">Role</label>
-            <input {...register("role", { required: true })} className="w-full rounded-lg border border-yellow-300 px-3 py-2 text-base mt-1 bg-neutral-800 text-white placeholder-gray-400" placeholder="Enter role" />
-            {errors.role && <p className="text-red-500 text-sm">Role is required</p>}
-          </div>
-          <div>
-            <label className="block text-white font-semibold mb-1">Requirements</label>
-            <textarea {...register("requirements", { required: true })} className="w-full rounded-lg border border-yellow-300 px-3 py-2 min-h-[60px] text-base mt-1 bg-neutral-800 text-white placeholder-gray-400" placeholder="Enter requirements" />
-            {errors.requirements && <p className="text-red-500 text-sm">Requirements are required</p>}
-          </div>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-white font-semibold mb-1">Salary from</label>
-              <input type="number" min="0" {...register("salaryFrom")}
-                className="w-full rounded-lg border border-yellow-300 px-3 py-2 text-base mt-1 bg-neutral-800 text-white placeholder-gray-400"
-                placeholder="From"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-white font-semibold mb-1">Salary to</label>
-              <input type="number" min="0" {...register("salaryTo")}
-                className="w-full rounded-lg border border-yellow-300 px-3 py-2 text-base mt-1 bg-neutral-800 text-white placeholder-gray-400"
-                placeholder="To"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-white font-semibold mb-1">Location</label>
-            <div className="flex items-center gap-2 mb-2">
-              <input type="checkbox" id="anyLocation" checked={anyLocation} onChange={e => setAnyLocation(e.target.checked)} />
-              <label htmlFor="anyLocation" className="text-sm text-white">Any location (Remote)</label>
-            </div>
-            {!anyLocation && (
-              <LocationSearch value={location} onSelect={setLocation}
-                inputSx={{
-                  '& .MuiInputBase-root': {
-                    backgroundColor: '#1a1a1a', // bg-neutral-800
-                    color: '#fff',
-                    borderRadius: '0.5rem',
-                    border: '2px solid #facc15', // border-yellow-300
-                    fontSize: '1rem',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: '#fff',
-                    '::placeholder': { color: '#a3a3a3' }, // placeholder-gray-400
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#facc15',
-                  },
-                  '& label': {
-                    color: '#fff',
-                  },
-                  '& label.Mui-focused': {
-                    color: '#facc15',
-                  },
-                }}
-              />
-            )}
-          </div>
-          <div>
-            <label className="block text-white font-semibold mb-1">Expiry Date</label>
-            <input type="date" {...register("expiry", { required: true })}
-              value={(() => {
-                // Если редактируем, приводим к yyyy-MM-dd
-                const val = (isEdit && vacancy?.expiry) ? String(vacancy.expiry) : undefined;
-                if (val && val.length >= 10) return val.slice(0, 10);
-                return undefined;
-              })()}
-              onChange={e => setValue("expiry", e.target.value)}
-              className="w-full rounded-lg border border-yellow-300 px-3 py-2 text-base mt-1 bg-neutral-800 text-white placeholder-gray-400" />
-            {errors.expiry && <p className="text-red-500 text-sm">Expiry date is required</p>}
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" className="px-6 py-3 rounded-lg bg-neutral-800 border border-yellow-300 text-yellow-300 font-bold hover:bg-yellow-900 hover:text-white transition" onClick={onClose}>Cancel</button>
-            <button type="submit" className="px-6 py-3 rounded-lg bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition">{isEdit ? "Save" : "Add"}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
 }
 
 // Мок-данные кандидатов
@@ -244,60 +107,65 @@ const uniqueLocations = Array.from(new Set(mockCandidates.map(c => c.location)))
 const minExp = Math.min(...mockCandidates.map(c => Number(c.experience)));
 const maxExp = Math.max(...mockCandidates.map(c => Number(c.experience)));
 
-// Мок-данные заявок (в реальном проекте — API)
-export type ApplicationStatus = 'pending' | 'accepted' | 'declined';
-export type Application = {
-  id: number;
-  vacancyId: string;
-  candidateId: number;
-  status: ApplicationStatus;
+type ApplicationStatus = ApiApplicationStatus;
+type Application = OutApplicationSchema & {
+  candidate?: OutUserSchema;
+  vacancy?: Vacancy;
 };
-
-const initialApplications: Application[] = [
-  { id: 1, vacancyId: '1', candidateId: 1, status: 'pending' },
-  { id: 2, vacancyId: '2', candidateId: 2, status: 'pending' },
-  { id: 3, vacancyId: '1', candidateId: 3, status: 'pending' },
-];
 
 const TeamDashboard = () => {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<OutUserSchema | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [profileError, setProfileError] = useState<string | null>(null);
+  const user = useAppSelector(state => state.auth.user);
+  const authStatus = useAppSelector(state => state.auth.authStatus);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [showCreateVacancy, setShowCreateVacancy] = useState(false);
   const [editVacancy, setEditVacancy] = useState<Vacancy | null>(null);
   const [shortlist, setShortlist] = useState<number[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(true);
+  const [applicationsError, setApplicationsError] = useState<string | null>(null);
 
   useEffect(() => {
-    setProfileLoading(true);
-    setProfileError(null);
-    AuthenticationService.readUsersMeV1AuthMeGet()
-      .then(user => {
-        if (user.role !== 'team') {
-          setProfileError('Not a team user.');
-          setProfile(null);
-        } else {
-          setProfile(user);
-        }
-        setProfileLoading(false);
-      })
-      .catch(err => {
-        setProfileError(err?.body?.detail || err?.message || 'Failed to load profile');
-        setProfileLoading(false);
-      });
+    if (authStatus !== 'authenticated' || !user) return;
     // Загрузка вакансий команды с backend
     VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet()
       .then(vacs => setVacancies(vacs.map(mapOutVacancyToVacancy)))
       .catch(() => setVacancies([]));
-    // Остальной localStorage для shortlist/applications пока оставляем
+    // Загрузка откликов на вакансии команды
+    const fetchApplications = async () => {
+      setApplicationsLoading(true);
+      setApplicationsError(null);
+      try {
+        // Получаем все отклики на вакансии команды
+        const backendApps = await ApplicationsService.getPendingApplicationsV1ApplicationsPendingGet();
+        // Получаем вакансии для сопоставления
+        const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+        // Для каждого отклика подгружаем кандидата
+        const candidateIds = Array.from(new Set(backendApps.map(a => a.candidate_id)));
+        const candidateMap: Record<number, OutUserSchema> = {};
+        await Promise.all(candidateIds.map(async (cid) => {
+          try {
+            candidateMap[cid] = await CandidatesService.getCandidateProfileV1CandidatesCandidateIdGet(cid);
+          } catch {}
+        }));
+        // Для каждой заявки сопоставляем кандидата и вакансию
+        const apps: Application[] = backendApps.map(app => ({
+          ...app,
+          candidate: candidateMap[app.candidate_id],
+          vacancy: backendVacancies.find(v => v.id === app.vacancy_id) ? mapOutVacancyToVacancy(backendVacancies.find(v => v.id === app.vacancy_id)) : undefined,
+        }));
+        setApplications(apps);
+      } catch (err: any) {
+        setApplicationsError(err?.body?.detail || err?.message || 'Failed to load applications');
+      } finally {
+        setApplicationsLoading(false);
+      }
+    };
+    fetchApplications();
+    // Остальной localStorage для shortlist пока оставляем
     const sl = localStorage.getItem(TEAM_SHORTLIST_KEY);
     if (sl) setShortlist(JSON.parse(sl));
-    const apps = localStorage.getItem(TEAM_APPLICATIONS_KEY);
-    if (apps) setApplications(JSON.parse(apps));
-    else setApplications(initialApplications);
-  }, []);
+  }, [authStatus, user]);
 
   const handleAddVacancy = async (vac: CreateVacancySchema) => {
     try {
@@ -315,12 +183,15 @@ const TeamDashboard = () => {
         Number(vac.id),
         {
           title: vac.role,
+          description: vac.description ?? '',
           requirements: vac.requirements,
           location: vac.location,
           position_type: vac.role,
+          experience_level: vac.experience_level ?? '',
           expiry_date: vac.expiry,
-          salary_min: vac.salaryFrom ? Number(vac.salaryFrom) : undefined,
-          salary_max: vac.salaryTo ? Number(vac.salaryTo) : undefined,
+          salary_min: vac.salaryFrom ? Number(vac.salaryFrom) : null,
+          salary_max: vac.salaryTo ? Number(vac.salaryTo) : null,
+          status: vac.status as any ?? 'active',
         }
       );
       const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
@@ -351,12 +222,14 @@ const TeamDashboard = () => {
     });
   };
 
-  const updateApplicationStatus = (id: number, status: ApplicationStatus) => {
-    setApplications(prev => {
-      const updated = prev.map(app => app.id === id ? { ...app, status } : app);
-      localStorage.setItem(TEAM_APPLICATIONS_KEY, JSON.stringify(updated));
-      return updated;
-    });
+  const updateApplicationStatus = async (id: number, status: ApplicationStatus) => {
+    try {
+      await ApplicationsService.updateApplicationStatusV1ApplicationsApplicationIdStatusPatch(id, { status });
+      const updated = applications.map(app => app.id === id ? { ...app, status } : app);
+      setApplications(updated);
+    } catch (err: any) {
+      alert('Failed to update application status: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
   };
 
   const [candidateFilters, setCandidateFilters] = useState({
@@ -424,29 +297,28 @@ const TeamDashboard = () => {
       {/* Team Profile Section */}
       <section className="bg-black py-12 px-8">
         <h2 className="text-3xl font-bold text-yellow-300 mb-8 uppercase">Team Profile</h2>
-        {profileLoading ? (
+        {authStatus === 'pending' ? (
           <div className="text-yellow-300 text-lg font-bold">Loading profile...</div>
-        ) : profileError ? (
-          <div className="text-red-500 text-lg font-bold">{profileError}</div>
-        ) : profile ? (
+        ) : !user ? (
+          <div className="text-red-500 text-lg font-bold">Not authenticated</div>
+        ) : user.role !== 'team' ? (
+          <div className="text-red-500 text-lg font-bold">Not a team user.</div>
+        ) : (
           <div className="flex flex-wrap gap-10 items-center">
             <div className="space-y-2 text-white text-lg">
-              <div><b>Team Name:</b> {profile.club_name || (profile.first_name + ' ' + profile.last_name)}</div>
-              <div><b>Email:</b> {profile.email}</div>
-              <div><b>Location:</b> {profile.location || '-'}</div>
-              <div><b>Position:</b> {profile.position || '-'}</div>
-              <div><b>Experience Level:</b> {profile.experience_level || '-'}</div>
-              <div><b>Qualification:</b> {profile.qualification || '-'}</div>
-              <div><b>Contact Phone:</b> {profile.contact_phone || '-'}</div>
-              <div><b>Status:</b> {profile.is_active ? 'Active' : 'Inactive'}</div>
-              <div><b>Approved:</b> {profile.is_approved ? 'Yes' : 'No'}</div>
-              <div><b>Email Verified:</b> {profile.email_verified ? 'Yes' : 'No'}</div>
+              <div><b>Team Name:</b> {user.club_name || (user.first_name + ' ' + user.last_name)}</div>
+              <div><b>Email:</b> {user.email}</div>
+              <div><b>Location:</b> {user.location || '-'}</div>
+              <div><b>Contact Phone:</b> {user.contact_phone || '-'}</div>
+              <div><b>Status:</b> {user.is_active ? 'Active' : 'Inactive'}</div>
+              <div><b>Approved:</b> {user.is_approved ? 'Yes' : 'No'}</div>
+              <div><b>Email Verified:</b> {user.email_verified ? 'Yes' : 'No'}</div>
             </div>
             {/* Логотип, если есть */}
-            {profile.logo_file_path && (
+            {user.logo_file_path && (
               <div className="ml-auto">
                 <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                  <img src={profile.logo_file_path} alt="Logo" className="object-cover w-full h-full" />
+                  <img src={user.logo_file_path} alt="Logo" className="object-cover w-full h-full" />
                 </div>
               </div>
             )}
@@ -454,8 +326,8 @@ const TeamDashboard = () => {
               Edit Profile
             </button>
           </div>
-        ) : null}
-      </section>
+        )}
+        </section>
 
       {/* Divider */}
       <div className="w-full h-6 bg-yellow-300" style={{ transform: 'skewY(-3deg)' }}></div>
@@ -580,43 +452,43 @@ const TeamDashboard = () => {
       {/* Applications Section */}
       <section className="bg-yellow-300 py-12 px-8">
         <h2 className="text-3xl font-bold text-black mb-8 uppercase">Applications</h2>
-          {applications.length === 0 ? (
+        {applicationsLoading ? (
+          <div className="text-gray-700 mb-4">Loading applications...</div>
+        ) : applicationsError ? (
+          <div className="text-red-500 mb-4">{applicationsError}</div>
+        ) : applications.length === 0 ? (
           <div className="text-gray-700 mb-4">No applications yet.</div>
           ) : (
             <div className="flex flex-col gap-4 mb-4">
-              {applications.map(app => {
-                const candidate = mockCandidates.find(c => c.id === app.candidateId);
-                const vacancy = vacancies.find(v => v.id === app.vacancyId);
-                return (
-                <div key={app.id} className="bg-white border rounded-lg p-4 flex flex-col md:flex-row md:items-center gap-2">
+            {applications.map(app => (
+              <div key={app.id} className="bg-white border rounded-lg p-4 flex flex-col md:flex-row md:items-center gap-2">
                     <div className="flex-1">
-                    <div className="font-semibold text-lg text-black">{candidate ? `${candidate.firstName} ${candidate.lastName}` : 'Unknown Candidate'}</div>
-                    <div className="text-yellow-400 font-medium">Vacancy: {vacancy ? vacancy.role : app.vacancyId}</div>
+                  <div className="font-semibold text-lg text-black">{app.candidate ? `${app.candidate.first_name} ${app.candidate.last_name}` : `Candidate #${app.candidate_id}`}</div>
+                  <div className="text-yellow-400 font-medium">Vacancy: {app.vacancy ? app.vacancy.role : app.vacancy_id}</div>
                       <div className="text-gray-500 text-xs mt-1">Status: <span className={
-                      app.status === 'pending' ? 'text-yellow-400' : app.status === 'accepted' ? 'text-green-600' : 'text-red-500'
+                    app.status === 'pending' ? 'text-yellow-400' : app.status === 'accepted' ? 'text-green-600' : app.status === 'declined' ? 'text-red-500' : 'text-gray-400'
                       }>{app.status}</span></div>
                     </div>
                     <div className="flex gap-2">
                       <button
-                      className="px-3 py-1 rounded bg-yellow-300 text-black text-sm font-bold hover:bg-yellow-400 transition"
-                        onClick={() => navigate(`/team/candidate/${app.candidateId}`)}
+                    className="px-3 py-1 rounded bg-yellow-300 text-black text-sm font-bold hover:bg-yellow-400 transition"
+                    onClick={() => navigate(`/team/candidate/${app.candidate_id}`)}
                       >Profile</button>
                       {app.status === 'pending' && (
                         <>
                           <button
                             className="px-3 py-1 rounded bg-green-600 text-white text-sm hover:bg-green-700"
-                            onClick={() => updateApplicationStatus(app.id, 'accepted')}
+                        onClick={() => updateApplicationStatus(app.id, 'accepted' as ApplicationStatus)}
                           >Accept</button>
                           <button
                             className="px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600"
-                            onClick={() => updateApplicationStatus(app.id, 'declined')}
+                        onClick={() => updateApplicationStatus(app.id, 'declined' as ApplicationStatus)}
                           >Decline</button>
                         </>
                       )}
                     </div>
                   </div>
-                );
-              })}
+            ))}
             </div>
           )}
         </section>

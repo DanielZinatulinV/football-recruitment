@@ -1,15 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
-import type { TeamRegisterSchema } from "../../../schemas/team.schema";
-
-const TEAM_PROFILE_KEY = "team_profile";
+import { AuthenticationService } from "../../../api";
+import type { TeamRegistrationSchema } from "../../../api/models/TeamRegistrationSchema";
 
 const useRegisterTeam = () => {
   return useMutation({
-    mutationFn: async (formData: TeamRegisterSchema) => {
-      // Сохраняем профиль команды в localStorage
-      localStorage.setItem(TEAM_PROFILE_KEY, JSON.stringify(formData));
-      // Мокаем задержку и успешный ответ
-      return new Promise((resolve) => setTimeout(() => resolve(formData), 300));
+    mutationFn: async (formData: TeamRegistrationSchema) => {
+      // Реальный запрос на сервер
+      return AuthenticationService.registerTeamV1AuthRegisterTeamPost(formData);
     },
   });
 };

@@ -5,9 +5,12 @@ import { VacanciesService } from '../../api';
 import type { OutUserSchema } from '../../api';
 import { OpenAPI } from '../../api';
 import { request as __request } from '../../api/core/request';
+import { useAppDispatch } from '../../redux/store';
+import { setUser } from '../../redux/slices/auth.slice';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -40,6 +43,7 @@ const AdminLogin = () => {
         return;
       }
       localStorage.setItem('current_user', JSON.stringify(user));
+      dispatch(setUser(user)); // <--- Добавлено: диспатч профиля в Redux
       setLoading(false);
       navigate("/admin/dashboard");
     } catch (err: any) {
