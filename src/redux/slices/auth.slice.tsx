@@ -8,6 +8,7 @@ const authSlice = createSlice({
   initialState: {
     ...initialAuthState,
     user: null as OutUserSchema | null,
+    unreadMessagesCount: 0,
   },
   reducers: {
     setAuthStatus: (state, action: PayloadAction<AuthStatus>) => {
@@ -20,6 +21,13 @@ const authSlice = createSlice({
     clearUser: (state) => {
       state.user = null;
       state.authStatus = "pending";
+      state.unreadMessagesCount = 0;
+    },
+    setUnreadMessagesCount: (state, action: PayloadAction<number>) => {
+      state.unreadMessagesCount = action.payload;
+    },
+    clearUnreadMessagesCount: (state) => {
+      state.unreadMessagesCount = 0;
     },
     // Оставляем для совместимости, но теперь setCurrentUser не нужен
     setCurrentUser: (state, action: PayloadAction<any>) => {
@@ -33,5 +41,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setAuthStatus, setUser, clearUser, setCurrentUser, clearCurrentUser } = authSlice.actions;
+export const { setAuthStatus, setUser, clearUser, setUnreadMessagesCount, clearUnreadMessagesCount, setCurrentUser, clearCurrentUser } = authSlice.actions;
 export const authReducer = authSlice.reducer;

@@ -86,6 +86,10 @@ const CandidateDashboard: React.FC = () => {
       }
     : null;
 
+  if (authStatus !== 'authenticated') {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-yellow-300 text-xl">Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-black pt-16">
       {/* Hero Section */}
@@ -133,9 +137,7 @@ const CandidateDashboard: React.FC = () => {
       {/* Profile Section */}
       <section className="bg-black py-12 px-8">
         <h2 className="text-3xl font-bold text-yellow-300 mb-8 uppercase">Candidate Profile</h2>
-        {authStatus === 'pending' ? (
-          <div className="text-yellow-300">Loading profile...</div>
-        ) : !user ? (
+        {!user ? (
           <div className="text-red-500">Not authenticated</div>
         ) : profile ? (
           <div className="flex flex-wrap gap-10 items-center">
@@ -247,7 +249,7 @@ const CandidateDashboard: React.FC = () => {
           >&gt;</button>
         </div>
       )}
-    </section>
+        </section>
     </div>
   );
 };

@@ -86,7 +86,7 @@ const JobSearch: React.FC = () => {
         ) : error ? (
           <div className="text-red-600 bg-yellow-100 rounded-xl p-10 text-center font-bold text-lg shadow">{error}</div>
         ) : vacancies.length === 0 ? (
-          <div className="text-black bg-yellow-300 rounded-xl p-10 text-center font-bold text-lg shadow">Вакансии не найдены</div>
+          <div className="text-black bg-yellow-300 rounded-xl p-10 text-center font-bold text-lg shadow">Vacancies not found</div>
         ) : (
           vacancies
             .filter((v: any) => {

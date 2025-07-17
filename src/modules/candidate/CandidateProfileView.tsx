@@ -80,7 +80,7 @@ const CandidateProfileView = () => {
             </button>
             <button
               className="rounded-lg px-6 py-3 bg-black text-yellow-300 font-bold border-2 border-black hover:bg-yellow-300 hover:text-black transition"
-              onClick={() => navigate('/inbox')}
+              onClick={() => navigate(`/inbox?user=${candidate.id}`)}
             >
               Отправить сообщение
             </button>

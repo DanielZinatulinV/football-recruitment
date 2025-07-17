@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockCandidates } from './TeamDashboard';
+import { mockCandidates } from './utils/candidateMock';
 
 const TEAM_INBOX_KEY = 'team_inbox';
 

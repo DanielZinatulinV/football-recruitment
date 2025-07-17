@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import LocationSearch from "../../components/LocationSearch";
 import useRegisterTeam from "./hooks/use-register-team";
 import { useState } from "react";
+import type { UserRole } from "../../api/models/UserRole";
 
 // Новый тип для формы
 interface TeamRegisterForm {
@@ -58,7 +59,7 @@ const TeamRegister = () => {
       first_name: formData.first_name,
       last_name: formData.last_name,
       email: formData.email,
-      role: 'team',
+      role: 'team' as UserRole,
       password: formData.password,
       club_name: formData.club_name,
       contact_phone: formData.contact_phone || null,
@@ -81,7 +82,7 @@ const TeamRegister = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-medium text-yellow-300 uppercase tracking-wide">
-              Team Registration
+            Team Registration
             </span>
             <span className="text-sm text-white font-bold uppercase tracking-wide">
               Football Team
@@ -89,7 +90,7 @@ const TeamRegister = () => {
           </div>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <form className="space-y-6" onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
+            <form className="space-y-6" onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
             <div className="space-y-6">
               <div>
                 <h2 className="text-3xl font-extrabold text-black mb-2 uppercase">Create Team Account</h2>
@@ -132,74 +133,74 @@ const TeamRegister = () => {
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <TextField
-                    id="email"
-                    label="Email Address"
+                  <div className="space-y-2">
+                    <TextField
+                      id="email"
+                      label="Email Address"
                     {...methods.register("email", { required: true })}
-                    placeholder="Enter your email address"
-                    fullWidth
-                    variant="outlined"
-                    margin="dense"
+                      placeholder="Enter your email address"
+                      fullWidth
+                      variant="outlined"
+                      margin="dense"
                     sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
-                  />
-                  {methods.formState.errors.email && (
-                    <p className="text-red-500 text-sm">
+                    />
+                    {methods.formState.errors.email && (
+                      <p className="text-red-500 text-sm">
                       {methods.formState.errors.email.message || 'Email is required'}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <TextField
-                    id="password"
-                    label="Password"
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <TextField
+                      id="password"
+                      label="Password"
                     {...methods.register("password", { required: true })}
-                    type="password"
-                    placeholder="Enter your password"
-                    fullWidth
-                    variant="outlined"
-                    margin="dense"
+                      type="password"
+                      placeholder="Enter your password"
+                      fullWidth
+                      variant="outlined"
+                      margin="dense"
                     sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
-                  />
-                  {methods.formState.errors.password && (
-                    <p className="text-red-500 text-sm">
+                    />
+                    {methods.formState.errors.password && (
+                      <p className="text-red-500 text-sm">
                       {methods.formState.errors.password.message || 'Password is required'}
-                    </p>
-                  )}
+                      </p>
+                    )}
                 </div>
               </div>
-              <div className="space-y-2">
-                <TextField
+                    <div className="space-y-2">
+                      <TextField
                   id="club_name"
-                  label="Club Name"
+                        label="Club Name"
                   {...methods.register("club_name", { required: true })}
-                  placeholder="Enter your club name"
-                  fullWidth
-                  variant="outlined"
-                  margin="dense"
+                        placeholder="Enter your club name"
+                        fullWidth
+                        variant="outlined"
+                        margin="dense"
                   sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
-                />
+                      />
                 {methods.formState.errors.club_name && (
-                  <p className="text-red-500 text-sm">
+                        <p className="text-red-500 text-sm">
                     {methods.formState.errors.club_name.message || 'Club name is required'}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <TextField
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <TextField
                   id="contact_phone"
                   label="Contact Phone (optional)"
                   {...methods.register("contact_phone")}
                   placeholder="Enter contact phone"
-                  fullWidth
-                  variant="outlined"
-                  margin="dense"
+                        fullWidth
+                        variant="outlined"
+                        margin="dense"
                   sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
-                />
-              </div>
+                      />
+                    </div>
               {/* location можно оставить как дополнительное поле, если нужно */}
-              <div className="space-y-2">
-                <LocationSearch
+                    <div className="space-y-2">
+                      <LocationSearch
                   onSelect={(value) => methods.setValue("location", value)}
                 />
               </div>
@@ -294,7 +295,7 @@ const TeamRegister = () => {
                 </>}
               </button>
             </div>
-          </form>
+            </form>
         </div>
       </div>
     </div>

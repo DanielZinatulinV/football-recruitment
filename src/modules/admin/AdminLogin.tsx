@@ -39,9 +39,9 @@ const AdminLogin = () => {
       }) as OutUserSchema;
       if (user.role !== 'admin') {
         setError('You are not an admin.');
-        setLoading(false);
-        return;
-      }
+      setLoading(false);
+      return;
+    }
       localStorage.setItem('current_user', JSON.stringify(user));
       dispatch(setUser(user)); // <--- Добавлено: диспатч профиля в Redux
       setLoading(false);
@@ -103,24 +103,13 @@ const AdminLogin = () => {
             />
           </div>
           {error && <div className="text-red-500 text-center font-semibold text-base mb-2">{error}</div>}
-          <button
-            type="submit"
+            <button
+              type="submit"
             className="w-full bg-yellow-300 hover:bg-yellow-400 text-black font-bold rounded-lg px-6 py-3 flex items-center justify-center transition text-lg mt-2 disabled:opacity-50"
-            disabled={loading}
-          >
+              disabled={loading}
+            >
             {loading ? "Logging in..." : "Login as Admin"}
           </button>
-          <button
-            type="button"
-            className="w-full mt-3 bg-black text-yellow-300 border-2 border-yellow-300 font-bold rounded-lg px-6 py-3 flex items-center justify-center transition text-lg hover:bg-yellow-300 hover:text-black"
-            onClick={handleTestVacancies}
-            disabled={vacanciesLoading}
-          >
-            {vacanciesLoading ? 'Testing Vacancies API...' : 'Test Vacancies API'}
-          </button>
-          {vacanciesResult && (
-            <pre className="mt-4 bg-neutral-100 rounded p-3 text-xs overflow-x-auto max-h-60 border border-yellow-200">{vacanciesResult}</pre>
-          )}
           <div className="flex justify-end mt-2">
             <button
               type="button"

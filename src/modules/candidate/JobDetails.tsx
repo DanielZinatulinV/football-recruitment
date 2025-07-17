@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
 import { ApplicationsService } from '../../api/services/ApplicationsService';
 import { VacanciesService } from '../../api/services/VacanciesService';
+import { useAppSelector } from '../../redux/store';
 
 
 const formatSalary = (min: string | null | undefined, max: string | null | undefined) => {
@@ -17,11 +18,12 @@ const JobDetails: React.FC = () => {
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // --- Новое состояние для отклика ---
-  // const [coverLetter, setCoverLetter] = useState('');
   const [applyLoading, setApplyLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const authStatus = useAppSelector(state => state.auth.authStatus);
+  const user = useAppSelector(state => state.auth.user);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -39,6 +41,19 @@ const JobDetails: React.FC = () => {
     fetchJob();
   }, [id]);
 
+  // Проверяем, откликался ли пользователь на эту вакансию
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !user) {
+      setAlreadyApplied(false);
+      return;
+    }
+    ApplicationsService.getMyApplicationsV1ApplicationsMyApplicationsGet()
+      .then(apps => {
+        setAlreadyApplied(apps.some((a: any) => a.vacancy_id === Number(id)));
+      })
+      .catch(() => setAlreadyApplied(false));
+  }, [authStatus, user, id]);
+
   const handleApply = async () => {
     setApplyLoading(true);
     setApplyError(null);
@@ -46,10 +61,9 @@ const JobDetails: React.FC = () => {
     try {
       await ApplicationsService.applyToVacancyV1ApplicationsPost({
         vacancy_id: Number(id),
-        // cover_letter: coverLetter || undefined, // закомментировано по бизнес-спецификации
       });
       setSuccess('You have successfully applied for this job!');
-      // setCoverLetter('');
+      setAlreadyApplied(true);
     } catch (e: any) {
       setApplyError(e?.body?.detail || e?.message || 'Error while applying.');
     } finally {
@@ -84,28 +98,31 @@ const JobDetails: React.FC = () => {
         </div>
         {/* --- Новая форма отклика --- */}
         <div className="flex flex-col md:flex-row gap-4 mt-8">
-          {/*
-          <div className="flex-1">
-            <textarea
-              className="w-full border border-black rounded-lg p-3 mb-2 min-h-[80px]"
-              placeholder="Cover letter (optional)"
-              value={coverLetter}
-              onChange={e => setCoverLetter(e.target.value)}
-              disabled={applyLoading}
-            />
-            {success && <div className="text-green-600 font-bold mb-2">{success}</div>}
-            {applyError && <div className="text-red-600 font-bold mb-2">{applyError}</div>}
-          </div>
-          */}
           {success && <div className="text-green-600 font-bold mb-2">{success}</div>}
           {applyError && <div className="text-red-600 font-bold mb-2">{applyError}</div>}
-          <button
-            className="rounded-lg px-8 py-3 bg-yellow-300 text-black font-bold border-2 border-yellow-300 hover:bg-yellow-400 transition text-lg w-full md:w-auto disabled:opacity-60"
-            onClick={handleApply}
-            disabled={applyLoading}
-          >
-            {applyLoading ? 'Applying...' : 'Apply'}
-          </button>
+          {authStatus !== 'authenticated' ? (
+            <button
+              className="rounded-lg px-8 py-3 bg-yellow-300 text-black font-bold border-2 border-yellow-300 hover:bg-yellow-400 transition text-lg w-full md:w-auto"
+              onClick={() => navigate('/login')}
+            >
+              Sign in to apply
+            </button>
+          ) : alreadyApplied ? (
+            <button
+              className="rounded-lg px-8 py-3 bg-gray-300 text-gray-500 font-bold border-2 border-gray-300 text-lg w-full md:w-auto cursor-not-allowed"
+              disabled
+            >
+              Already applied
+            </button>
+          ) : (
+            <button
+              className="rounded-lg px-8 py-3 bg-yellow-300 text-black font-bold border-2 border-yellow-300 hover:bg-yellow-400 transition text-lg w-full md:w-auto disabled:opacity-60"
+              onClick={handleApply}
+              disabled={applyLoading}
+            >
+              {applyLoading ? 'Applying...' : 'Apply'}
+            </button>
+          )}
         </div>
       </div>
     </div>
