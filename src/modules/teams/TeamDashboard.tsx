@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateVacancyForm from "./components/CreateVacancyForm";
 import CandidateFilters from "./components/CandidateFilters";
@@ -28,7 +28,18 @@ const TeamDashboard = () => {
     handleDeleteVacancy,
     toggleShortlist,
     updateApplicationStatus,
+    handleCloseVacancy,
+    handleOpenVacancy,
+    handleDraftVacancy,
+    handleRestoreVacancy,
+    handleActivateVacancy,
   } = useTeamDashboardData();
+
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      navigate('/login');
+    }
+  }, [authStatus, navigate]);
 
   const [candidateFilters, setCandidateFilters] = useState<{
     name: string;
@@ -149,7 +160,11 @@ const TeamDashboard = () => {
                   key={vac.id}
                   vacancy={vac}
                   onEdit={v => { setEditVacancy(v); setShowCreateVacancy(true); }}
-                  onDelete={handleDeleteVacancy}
+                  onClose={handleCloseVacancy}
+                  onOpen={handleOpenVacancy}
+                  onDraft={handleDraftVacancy}
+                  onRestore={handleRestoreVacancy}
+                  onActivate={handleActivateVacancy}
                 />
               ))}
             </div>
@@ -163,6 +178,45 @@ const TeamDashboard = () => {
             />
           )}
         </section>
+
+      {/* Accepted Candidates Section */}
+      <section className="bg-white py-12 px-8">
+        <h2 className="text-3xl font-bold text-black mb-8 uppercase">Accepted Candidates</h2>
+        {applicationsLoading ? (
+          <div className="text-gray-700 mb-4">Loading accepted candidates...</div>
+        ) : (
+          (() => {
+            const accepted = applications.filter(app => app.status === 'accepted');
+            if (accepted.length === 0) {
+              return <div className="text-gray-700 mb-4">No accepted candidates yet.</div>;
+            }
+            return (
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white rounded-xl shadow">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left">Name</th>
+                      <th className="px-4 py-2 text-left">Vacancy</th>
+                      <th className="px-4 py-2 text-left">Experience</th>
+                      <th className="px-4 py-2 text-left">Location</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accepted.map(app => (
+                      <tr key={app.id} className="border-t">
+                        <td className="px-4 py-2">{app.candidate?.first_name} {app.candidate?.last_name}</td>
+                        <td className="px-4 py-2">{app.vacancy?.role}</td>
+                        <td className="px-4 py-2">{app.candidate?.experience_level || '-'}</td>
+                        <td className="px-4 py-2">{app.candidate?.location || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()
+        )}
+      </section>
 
       {/* Divider */}
       <div className="w-full h-6 bg-black" style={{ transform: 'skewY(3deg)' }}></div>

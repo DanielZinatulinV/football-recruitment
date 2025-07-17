@@ -25,4 +25,4 @@ dist-ssr
 plan.md
 spec.md
 *.docx
-openapi.json
+# openapi.json

@@ -1,1 +1,1 @@
-export type AuthStatus = "pending" | "authenticated";
+export type AuthStatus = "pending" | "authenticated" | "unauthenticated";

@@ -20,7 +20,7 @@ const authSlice = createSlice({
     },
     clearUser: (state) => {
       state.user = null;
-      state.authStatus = "pending";
+      state.authStatus = "unauthenticated";
       state.unreadMessagesCount = 0;
     },
     setUnreadMessagesCount: (state, action: PayloadAction<number>) => {
@@ -36,7 +36,7 @@ const authSlice = createSlice({
     },
     clearCurrentUser: (state) => {
       state.user = null;
-      state.authStatus = "pending";
+      state.authStatus = "unauthenticated";
     },
   },
 });

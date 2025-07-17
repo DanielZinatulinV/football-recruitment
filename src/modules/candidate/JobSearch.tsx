@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { VacanciesService } from '../../api/services/VacanciesService';
+import { useAppSelector } from '../../redux/store';
 
 const unique = (arr: string[]) => Array.from(new Set(arr.filter(Boolean)));
 
@@ -14,6 +15,7 @@ const JobSearch: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const authStatus = useAppSelector(state => state.auth.authStatus);
 
   // Получение вакансий с бэкенда
   useEffect(() => {
@@ -85,34 +87,44 @@ const JobSearch: React.FC = () => {
           <div className="text-black bg-yellow-300 rounded-xl p-10 text-center font-bold text-lg shadow">Loading vacancies...</div>
         ) : error ? (
           <div className="text-red-600 bg-yellow-100 rounded-xl p-10 text-center font-bold text-lg shadow">{error}</div>
-        ) : vacancies.length === 0 ? (
-          <div className="text-black bg-yellow-300 rounded-xl p-10 text-center font-bold text-lg shadow">Vacancies not found</div>
         ) : (
-          vacancies
-            .filter((v: any) => {
-              // Фильтрация по ключевому слову (title, requirements, description)
-              if (!keyword) return true;
-              const kw = keyword.toLowerCase();
+          (() => {
+            const activeVacancies = vacancies.filter((v: any) => v.status === 'active');
+            if (activeVacancies.length === 0) {
               return (
-                v.title?.toLowerCase().includes(kw) ||
-                v.requirements?.toLowerCase().includes(kw) ||
-                v.description?.toLowerCase().includes(kw)
+                <div className="text-black bg-yellow-300 rounded-xl p-10 text-center font-bold text-lg shadow">Vacancies not found</div>
               );
-            })
-            .map((job: any) => (
-              <div key={job.id} className="bg-white rounded-xl shadow p-8 flex flex-wrap items-center gap-8">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="font-bold text-xl text-black mb-1">{job.title}</div>
-                  <div className="text-yellow-500 font-semibold mb-1">Team #{job.team_id}</div>
-                  <div className="text-gray-700 text-sm mb-2">{job.location} • {job.experience_level} • {formatSalary(job.salary_min, job.salary_max)}</div>
-                  <div className="mt-2 text-black">{job.requirements}</div>
+            }
+            return activeVacancies
+              .filter((v: any) => {
+                // Фильтрация по ключевому слову (title, requirements, description)
+                if (!keyword) return true;
+                const kw = keyword.toLowerCase();
+                return (
+                  v.title?.toLowerCase().includes(kw) ||
+                  v.requirements?.toLowerCase().includes(kw) ||
+                  v.description?.toLowerCase().includes(kw)
+                );
+              })
+              .map((job: any) => (
+                <div key={job.id} className="bg-white rounded-xl shadow p-8 flex flex-wrap items-center gap-8">
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="font-bold text-xl text-black mb-1">{job.title}</div>
+                    <div className="text-yellow-500 font-semibold mb-1">Team #{job.team_id}</div>
+                    <div className="text-gray-700 text-sm mb-2">{job.location} • {job.experience_level} • {formatSalary(job.salary_min, job.salary_max)}</div>
+                    <div className="mt-2 text-black">{job.requirements}</div>
+                  </div>
+                  <div className="text-right min-w-[140px] flex flex-col items-end">
+                    <div className="text-gray-400 text-xs mb-2">Published: {job.created_at?.slice(0,10)}</div>
+                    {authStatus !== 'authenticated' ? (
+                      <button className="rounded px-6 py-2 bg-yellow-300 text-black font-bold shadow hover:bg-yellow-400 transition" onClick={() => navigate('/register')}>Sign up to apply</button>
+                    ) : (
+                      <button className="rounded px-6 py-2 bg-yellow-300 text-black font-bold shadow hover:bg-yellow-400 transition" onClick={() => navigate(`/jobs/${job.id}`)}>Details</button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right min-w-[140px] flex flex-col items-end">
-                  <div className="text-gray-400 text-xs mb-2">Published: {job.created_at?.slice(0,10)}</div>
-                  <button className="rounded px-6 py-2 bg-yellow-300 text-black font-bold shadow hover:bg-yellow-400 transition" onClick={() => navigate(`/jobs/${job.id}`)}>Details</button>
-                </div>
-              </div>
-            ))
+              ));
+          })()
         )}
       </section>
     </div>

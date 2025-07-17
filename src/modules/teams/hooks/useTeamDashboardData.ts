@@ -9,6 +9,7 @@ import type { ApplicationStatus as ApiApplicationStatus } from '../../../api/mod
 import type { CreateVacancySchema } from '../../../api/models/CreateVacancySchema';
 import type { Vacancy, Application } from '../types/team-dashboard.types';
 import { useAppSelector } from '../../../redux/store';
+import { VacancyStatus } from '../../../api/models/VacancyStatus';
 
 const TEAM_VACANCIES_KEY = "team_vacancies";
 const TEAM_SHORTLIST_KEY = "team_shortlist";
@@ -128,6 +129,56 @@ export function useTeamDashboardData() {
     }
   };
 
+  const handleCloseVacancy = async (id: string) => {
+    try {
+      await VacanciesService.closeVacancyV1VacanciesVacancyIdClosePost(Number(id));
+      const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+      setVacancies(backendVacancies.map(mapOutVacancyToVacancy));
+    } catch (err: any) {
+      alert('Failed to close vacancy: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
+  };
+
+  const handleOpenVacancy = async (id: string) => {
+    try {
+      await VacanciesService.updateVacancyV1VacanciesVacancyIdPut(Number(id), { status: VacancyStatus.ACTIVE });
+      const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+      setVacancies(backendVacancies.map(mapOutVacancyToVacancy));
+    } catch (err: any) {
+      alert('Failed to open vacancy: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
+  };
+
+  const handleDraftVacancy = async (id: string) => {
+    try {
+      await VacanciesService.updateVacancyV1VacanciesVacancyIdPut(Number(id), { status: VacancyStatus.DRAFT });
+      const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+      setVacancies(backendVacancies.map(mapOutVacancyToVacancy));
+    } catch (err: any) {
+      alert('Failed to archive vacancy: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
+  };
+
+  const handleRestoreVacancy = async (id: string) => {
+    try {
+      await VacanciesService.updateVacancyV1VacanciesVacancyIdPut(Number(id), { status: VacancyStatus.CLOSED });
+      const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+      setVacancies(backendVacancies.map(mapOutVacancyToVacancy));
+    } catch (err: any) {
+      alert('Failed to restore vacancy: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
+  };
+
+  const handleActivateVacancy = async (id: string) => {
+    try {
+      await VacanciesService.activateVacancyV1VacanciesVacanciesActivatePost(Number(id));
+      const backendVacancies = await VacanciesService.getMyVacanciesV1VacanciesMyVacanciesGet();
+      setVacancies(backendVacancies.map(mapOutVacancyToVacancy));
+    } catch (err: any) {
+      alert('Failed to activate vacancy: ' + (err?.body?.detail || err?.message || 'Unknown error'));
+    }
+  };
+
   const toggleShortlist = (id: number) => {
     setShortlist(prev => {
       let updated;
@@ -171,5 +222,10 @@ export function useTeamDashboardData() {
     handleDeleteVacancy,
     toggleShortlist,
     updateApplicationStatus,
+    handleCloseVacancy,
+    handleOpenVacancy,
+    handleDraftVacancy,
+    handleRestoreVacancy,
+    handleActivateVacancy,
   };
 } 

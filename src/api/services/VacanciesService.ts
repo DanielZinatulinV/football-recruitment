@@ -172,4 +172,34 @@ export class VacanciesService {
             },
         });
     }
+    /**
+     * Get Active Vacancies
+     * Получить все активные вакансии для текущей команды.
+     * @returns OutVacancySchema Successful Response
+     * @throws ApiError
+     */
+    public static getActiveVacanciesV1VacanciesVacanciesActiveGet(): CancelablePromise<Array<OutVacancySchema>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/v1/vacancies/vacancies/active',
+        });
+    }
+    /**
+     * Activate Vacancy
+     * Активировать вакансию по id.
+     * @param vacancyId
+     * @returns OutVacancySchema Successful Response
+     * @throws ApiError
+     */
+    public static activateVacancyV1VacanciesVacanciesActivatePost(
+        vacancyId: number,
+    ): CancelablePromise<OutVacancySchema> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/v1/vacancies/vacancies/activate',
+            query: {
+                'vacancy_id': vacancyId,
+            },
+        });
+    }
 }
