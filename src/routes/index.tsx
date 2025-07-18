@@ -25,6 +25,7 @@ import Payment from '../modules/payment/Payment';
 import VerifyEmail from '../modules/auth/VerifyEmail';
 import Dashboard from '../modules/candidate/Dashboard';
 import TalentSearch from '../modules/teams/TalentSearch';
+import TermsPage from "../modules/candidate/TermsPage";
 const TeamDashboard = lazyLoad(() => import("../modules/teams/TeamDashboard"));
 
 const TeamRegister = lazyLoad(() => import("../modules/teams/TeamRegister"));
@@ -53,6 +54,7 @@ const routes = createBrowserRouter(
         <Route path="/jobs" element={<JobSearch />} />
         <Route path="/jobs/:id" element={<JobDetails />} />
         <Route path="/talent" element={<TalentSearch />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route element={<AuthLayout />} errorElement={<NotFound />}>
