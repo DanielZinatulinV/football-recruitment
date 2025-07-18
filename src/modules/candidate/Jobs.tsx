@@ -1,21 +1,117 @@
 import { Star, Group, EmojiEvents } from '@mui/icons-material';
 import Footer from '../../components/Footer';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
+import { VacanciesService } from '../../api/services/VacanciesService';
 
-const mockJobs = [
-  { title: "Scout Assistant", club: "FC Academy" },
-  { title: "Video Analyst", club: "United Youth" },
-  { title: "Technical Director", club: "Premier SC" },
-  { title: "Team Administrator", club: "Lions FC" },
-  { title: "Sports Psychologist", club: "Galaxy FC" },
-  { title: "Recruitment Manager", club: "City Stars" },
-  { title: "Fitness Coach", club: "Fit United" },
-  { title: "Goalkeeping Coach", club: "Red Warriors" },
-  { title: "Nutrition Expert", club: "Powerhouse FC" },
-  { title: "Medical Assistant", club: "White Eagles" },
-];
+const JOBS_PER_COLUMN = 3;
+const MIN_INTERVAL = 3000;
+const MAX_INTERVAL = 5000;
+
+function getRandomInterval() {
+  return Math.floor(Math.random() * (MAX_INTERVAL - MIN_INTERVAL + 1)) + MIN_INTERVAL;
+}
+
+function splitJobs(jobs) {
+  const left = [], right = [];
+  jobs.forEach((job, idx) => {
+    (idx % 2 === 0 ? left : right).push(job);
+  });
+  return [left, right];
+}
 
 export default function HomePage() {
+  const [jobs, setJobs] = useState([]);
+  const [leftJobs, setLeftJobs] = useState([]);
+  const [rightJobs, setRightJobs] = useState([]);
+  const [visibleLeft, setVisibleLeft] = useState([]);
+  const [visibleRight, setVisibleRight] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [leftIdx, setLeftIdx] = useState(0);
+  const [rightIdx, setRightIdx] = useState(0);
+  const [leftAnimating, setLeftAnimating] = useState(false);
+  const [rightAnimating, setRightAnimating] = useState(false);
+  const leftTimeout = useRef(null);
+  const rightTimeout = useRef(null);
+
+  // Загрузка вакансий
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    VacanciesService.listVacanciesV1VacanciesGet(undefined, undefined, undefined, undefined, undefined, undefined, 20, 0)
+      .then((res) => {
+        let arr = res.items || [];
+        if (arr.length > 0 && arr.length < 12) {
+          const times = Math.ceil(12 / arr.length);
+          arr = Array(times).fill(arr).flat().slice(0, 12);
+        }
+        setJobs(arr);
+        setLoading(false);
+      })
+      .catch((e) => {
+        setError(e?.body?.detail || e?.message || 'Ошибка загрузки вакансий');
+        setLoading(false);
+      });
+  }, []);
+
+  // Делим вакансии на две колонки
+  useEffect(() => {
+    const [left, right] = splitJobs(jobs);
+    setLeftJobs(left);
+    setRightJobs(right);
+    setVisibleLeft(left.slice(0, JOBS_PER_COLUMN));
+    setVisibleRight(right.slice(0, JOBS_PER_COLUMN));
+    setLeftIdx(JOBS_PER_COLUMN % left.length || 0);
+    setRightIdx(JOBS_PER_COLUMN % right.length || 0);
+  }, [jobs]);
+
+  // Карусель для левой колонки
+  useEffect(() => {
+    if (leftJobs.length <= JOBS_PER_COLUMN) return;
+    if (leftTimeout.current) clearTimeout(leftTimeout.current);
+    const tick = () => {
+      setLeftAnimating(true);
+      setTimeout(() => {
+        setVisibleLeft((prev) => {
+          const nextJob = leftJobs[leftIdx];
+          const updated = [nextJob, ...prev.slice(0, JOBS_PER_COLUMN - 1)];
+          return updated;
+        });
+        setLeftIdx((prev) => (prev + 1) % leftJobs.length);
+        setLeftAnimating(false);
+        leftTimeout.current = setTimeout(tick, getRandomInterval());
+      }, 500); // длительность анимации
+    };
+    leftTimeout.current = setTimeout(tick, getRandomInterval());
+    return () => clearTimeout(leftTimeout.current);
+  }, [leftJobs, leftIdx]);
+
+  // Карусель для правой колонки
+  useEffect(() => {
+    if (rightJobs.length <= JOBS_PER_COLUMN) return;
+    if (rightTimeout.current) clearTimeout(rightTimeout.current);
+    const tick = () => {
+      setRightAnimating(true);
+      setTimeout(() => {
+        setVisibleRight((prev) => {
+          const nextJob = rightJobs[rightIdx];
+          const updated = [nextJob, ...prev.slice(0, JOBS_PER_COLUMN - 1)];
+          return updated;
+        });
+        setRightIdx((prev) => (prev + 1) % rightJobs.length);
+        setRightAnimating(false);
+        rightTimeout.current = setTimeout(tick, getRandomInterval());
+      }, 500);
+    };
+    rightTimeout.current = setTimeout(tick, getRandomInterval());
+    return () => clearTimeout(rightTimeout.current);
+  }, [rightJobs, rightIdx]);
+
+  // Высота одной карточки (px)
+  const cardHeight = 110;
+  const columnHeight = JOBS_PER_COLUMN * cardHeight + (JOBS_PER_COLUMN - 1) * 24; // 24px gap-6
+
   return (
     <div className="min-h-screen bg-black flex flex-col">
       {/* Hero Section */}
@@ -96,14 +192,42 @@ export default function HomePage() {
       {/* Latest Jobs Section */}
       <section className="w-full max-w-4xl mx-auto pb-16 px-4">
         <h2 className="text-2xl font-bold text-white mb-8 uppercase text-center tracking-wide">Latest Jobs</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {mockJobs.slice(0, 6).map((job, i) => (
-            <div key={i} className="bg-white rounded-xl shadow p-6 flex flex-col gap-2">
-              <div className="font-bold text-lg text-black">{job.title}</div>
-              <div className="text-yellow-400 font-semibold">{job.club}</div>
+        {loading ? (
+          <div className="text-center text-yellow-300 py-8 text-lg">Загрузка вакансий...</div>
+        ) : error ? (
+          <div className="text-center text-red-400 py-8 text-lg">{error}</div>
+        ) : jobs.length === 0 ? (
+          <div className="text-center text-gray-400 py-8 text-lg">Вакансии не найдены</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Левая колонка */}
+            <div className="flex flex-col gap-6">
+              {leftJobs.slice(0, 3).map((job) => (
+                <div
+                  key={job.id + '-left'}
+                  className="bg-white rounded-xl shadow p-6 flex flex-col gap-2"
+                >
+                  <div className="font-bold text-lg text-black">{job.title}</div>
+                  <div className="text-yellow-400 font-semibold">{job.team_name || job.club || 'Клуб не указан'}</div>
+                  <div className="text-gray-700 text-sm line-clamp-2">{job.location}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            {/* Правая колонка */}
+            <div className="flex flex-col gap-6">
+              {rightJobs.slice(0, 3).map((job) => (
+                <div
+                  key={job.id + '-right'}
+                  className="bg-white rounded-xl shadow p-6 flex flex-col gap-2"
+                >
+                  <div className="font-bold text-lg text-black">{job.title}</div>
+                  <div className="text-yellow-400 font-semibold">{job.team_name || job.club || 'Клуб не указан'}</div>
+                  <div className="text-gray-700 text-sm line-clamp-2">{job.location}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex justify-center mt-8">
           <a href="/jobs" className="px-8 py-3 rounded-lg bg-yellow-300 text-black font-bold text-lg uppercase shadow hover:bg-yellow-400 transition">See All Jobs</a>
         </div>
