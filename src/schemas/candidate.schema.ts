@@ -13,7 +13,7 @@ export const candidateSchema = z.object({
   cv: z.any().refine((file) => file instanceof File || file === null, {
     message: "CV must be a file",
   }),
-  selectedPlan: z.enum(["basic", "pro"]).optional(),
+  selectedPlan: z.enum(["basic", "premium", "professional"]).optional(),
   paymentStatus: z.enum(["paid", "unpaid"]).optional(),
 });
 

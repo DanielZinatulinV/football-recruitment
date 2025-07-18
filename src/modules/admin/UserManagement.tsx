@@ -43,6 +43,9 @@ const UserManagement = () => {
     return matchesSearch && matchesType;
   });
 
+  const candidates = users.filter(u => u.role === 'candidate');
+  const teams = users.filter(u => u.role === 'team');
+
   // TODO: Implement real status toggle via API
   const toggleStatus = useCallback(async (user: OutUserSchema) => {
     setActionError(null);
@@ -63,6 +66,11 @@ const UserManagement = () => {
   }, []);
 
   const handleView = useCallback((user: OutUserSchema) => {
+    setModalUser(user);
+  }, []);
+
+  const handleManage = useCallback((user: OutUserSchema) => {
+    // Пока просто открываем модалку, в будущем — управление подпиской
     setModalUser(user);
   }, []);
   const closeModal = () => setModalUser(null);
@@ -99,28 +107,79 @@ const UserManagement = () => {
         </div>
         {loading && <div className="text-yellow-300 text-center py-8 text-lg font-bold">Loading users...</div>}
         {error && <div className="text-red-500 text-center py-8 text-lg font-bold">{error}</div>}
-        <div className="overflow-x-auto rounded-xl shadow">
+        {/* Таблица кандидатов */}
+        <h2 className="text-2xl font-bold text-yellow-300 mb-2 mt-8 uppercase">Candidates</h2>
+        <div className="overflow-x-auto rounded-xl shadow mb-10">
           <table className="min-w-full bg-white rounded-xl">
             <thead>
               <tr className="bg-yellow-100 text-yellow-700 uppercase text-sm">
                 <th className="py-3 px-4 text-left">Name</th>
                 <th className="py-3 px-4 text-left">Email</th>
-                <th className="py-3 px-4 text-left">Role</th>
                 <th className="py-3 px-4 text-left">Status</th>
                 <th className="py-3 px-4 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {!loading && !error && filtered.length === 0 && (
+              {candidates.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center py-6 text-gray-400">No users found</td>
+                  <td colSpan={4} className="text-center py-6 text-gray-400">No candidates found</td>
                 </tr>
               )}
-              {!loading && !error && filtered.map(user => (
+              {candidates.map(user => (
                 <tr key={user.id} className="border-b last:border-b-0">
                   <td className="py-3 px-4 text-black font-semibold">{user.first_name} {user.last_name}</td>
                   <td className="py-3 px-4 text-black">{user.email}</td>
-                  <td className="py-3 px-4 text-black">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
+                  <td className="py-3 px-4">
+                    <span className={
+                      user.is_active
+                        ? "text-yellow-500 font-semibold"
+                        : "text-red-500 font-semibold"
+                    }>
+                      {user.is_active ? 'Active' : 'Suspended'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 flex gap-2">
+                    <button
+                      onClick={() => toggleStatus(user)}
+                      className="px-3 py-1 rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 text-xs font-semibold border border-yellow-300 disabled:opacity-60"
+                      disabled={!!actionLoading[user.id]}
+                    >
+                      {actionLoading[user.id] ? (user.is_active ? 'Suspending...' : 'Activating...') : (user.is_active ? "Suspend" : "Activate")}
+                    </button>
+                    <button
+                      onClick={() => handleManage(user)}
+                      className="px-3 py-1 rounded bg-white text-black hover:bg-yellow-100 text-xs font-semibold border border-yellow-300"
+                    >
+                      Manage
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* Таблица команд */}
+        <h2 className="text-2xl font-bold text-yellow-300 mb-2 mt-8 uppercase">Teams</h2>
+        <div className="overflow-x-auto rounded-xl shadow mb-10">
+          <table className="min-w-full bg-white rounded-xl">
+            <thead>
+              <tr className="bg-yellow-100 text-yellow-700 uppercase text-sm">
+                <th className="py-3 px-4 text-left">Name</th>
+                <th className="py-3 px-4 text-left">Email</th>
+                <th className="py-3 px-4 text-left">Status</th>
+                <th className="py-3 px-4 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teams.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center py-6 text-gray-400">No teams found</td>
+                </tr>
+              )}
+              {teams.map(user => (
+                <tr key={user.id} className="border-b last:border-b-0">
+                  <td className="py-3 px-4 text-black font-semibold">{user.first_name} {user.last_name}</td>
+                  <td className="py-3 px-4 text-black">{user.email}</td>
                   <td className="py-3 px-4">
                     <span className={
                       user.is_active

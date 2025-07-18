@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../redux/store';
 import { ApplicationsService } from '../../api/services/ApplicationsService';
 import { VacanciesService } from '../../api/services/VacanciesService';
-import { useRef } from 'react';
+import { CandidatesService } from '../../api/services/CandidatesService';
 
 const CandidateDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +15,11 @@ const CandidateDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [featuredJobs, setFeaturedJobs] = useState<any[]>([]);
   const featuredRef = useRef<HTMLDivElement>(null);
+  const [cvUploading, setCvUploading] = useState(false);
+  const [cvError, setCvError] = useState<string | null>(null);
+  const [cvSuccess, setCvSuccess] = useState<string | null>(null);
+  const dispatch = useAppSelector(state => state.auth.user) ? useAppSelector : null;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (authStatus !== 'authenticated' || !user) return;
@@ -86,6 +91,30 @@ const CandidateDashboard: React.FC = () => {
       }
     : null;
 
+  // --- CV upload handler ---
+  const handleCvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCvError(null);
+    setCvSuccess(null);
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
+      setCvError('Only PDF, DOC, DOCX files are allowed.');
+      return;
+    }
+    setCvUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await CandidatesService.uploadCvV1CandidatesUploadCvPost({ file });
+      setCvSuccess('CV uploaded successfully!');
+      window.location.reload(); // или можно обновить профиль через redux
+    } catch (e: any) {
+      setCvError(e?.body?.detail || e?.message || 'Failed to upload CV');
+    } finally {
+      setCvUploading(false);
+    }
+  };
+
   if (authStatus !== 'authenticated') {
     return <div className="min-h-screen bg-black flex items-center justify-center text-yellow-300 text-xl">Loading...</div>;
   }
@@ -121,11 +150,11 @@ const CandidateDashboard: React.FC = () => {
             <div className="text-lg text-gray-700 mt-2">Applications</div>
           </div>
           <div className="bg-white rounded shadow p-8 text-center">
-            <div className="text-4xl font-extrabold text-black">-</div>
+            <div className="text-4xl font-extrabold text-black">3</div>
             <div className="text-lg text-gray-700 mt-2">Interviews</div>
           </div>
           <div className="bg-white rounded shadow p-8 text-center">
-            <div className="text-4xl font-extrabold text-black">-</div>
+            <div className="text-4xl font-extrabold text-black">1</div>
             <div className="text-lg text-gray-700 mt-2">Offers</div>
           </div>
         </div>
@@ -149,6 +178,25 @@ const CandidateDashboard: React.FC = () => {
               <div><b>Qualifications:</b> {profile.qualifications}</div>
               <div><b>Subscription:</b> {profile.subscription}</div>
               <div><b>CV:</b> {profile.cv ? <a href={profile.cv} className="text-yellow-300 underline" target="_blank" rel="noopener noreferrer">Download CV</a> : <span className="text-gray-400">Not uploaded</span>}</div>
+              <div className="mt-2">
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  id="cv-upload"
+                  style={{ display: 'none' }}
+                  onChange={handleCvUpload}
+                  disabled={cvUploading}
+                  ref={fileInputRef}
+                />
+                <button
+                  type="button"
+                  className="rounded px-4 py-2 bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition"
+                  disabled={cvUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >{cvUploading ? 'Uploading...' : (profile.cv ? 'Update CV' : 'Upload CV')}</button>
+                {cvError && <div className="text-red-500 text-sm mt-1">{cvError}</div>}
+                {cvSuccess && <div className="text-green-500 text-sm mt-1">{cvSuccess}</div>}
+              </div>
             </div>
             <button className="rounded px-6 py-3 bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition" onClick={() => navigate('/candidate/profile/edit')}>
               Edit Profile
@@ -186,7 +234,7 @@ const CandidateDashboard: React.FC = () => {
                   return (
                     <tr key={app.id} className="bg-white border-b border-yellow-200">
                       <td className="p-3 text-black font-semibold">{vacancy ? vacancy.title : '...'}</td>
-                      <td className="p-3 text-black">{vacancy ? (vacancy.club_name || `Team #${vacancy.team_id}`) : '...'}</td>
+                      <td className="p-3 text-black">{vacancy ? (vacancy.club_name || `Team #${vacancy.id}`) : '...'}</td>
                       <td className="p-3 text-black">{formatDate(app.created_at)}</td>
                       <td className="p-3">{formatStatus(app.status)}</td>
                     </tr>
@@ -226,7 +274,7 @@ const CandidateDashboard: React.FC = () => {
               <div key={job.id} className="min-w-[300px] max-w-[320px] bg-white rounded-xl shadow p-6 flex flex-col justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-black mb-2 truncate">{job.title}</h3>
-                  <p className="text-gray-700 mb-2">{job.club_name || `Team #${job.team_id}`}</p>
+                  <p className="text-gray-700 mb-2">{job.club_name || `Team #${job.team_name}`}</p>
                   <p className="text-gray-500 text-sm mb-4 truncate">{job.requirements}</p>
                 </div>
                 <button

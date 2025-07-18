@@ -10,6 +10,7 @@ const VerifyEmail = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+  const stripe = searchParams.get('stripe');
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +19,13 @@ const VerifyEmail = () => {
     try {
       await AuthenticationService.verifyEmailV1AuthVerifyEmailPost(email, Number(code));
       setSuccess(true);
-      setTimeout(() => navigate('/payment'), 1200);
+      setTimeout(() => {
+        if (stripe === '1') {
+          navigate('/payment');
+        } else {
+          navigate('/dashboard');
+        }
+      }, 1200);
     } catch (err) {
       setError('Invalid code or server error');
     } finally {

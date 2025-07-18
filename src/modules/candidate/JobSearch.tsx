@@ -16,6 +16,9 @@ const JobSearch: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const authStatus = useAppSelector(state => state.auth.authStatus);
+  const [allTitles, setAllTitles] = useState<string[]>([]);
+  const [allLocations, setAllLocations] = useState<string[]>([]);
+  const [allLevels, setAllLevels] = useState<string[]>([]);
 
   // Получение вакансий с бэкенда
   useEffect(() => {
@@ -43,6 +46,19 @@ const JobSearch: React.FC = () => {
     fetchVacancies();
   }, [role, location, salary, level, keyword]);
 
+  useEffect(() => {
+    // Один раз при монтировании — получить все вакансии (или только уникальные значения, если есть отдельный API)
+    const fetchAllVacancies = async () => {
+      try {
+        const res = await VacanciesService.listVacanciesV1VacanciesGet();
+        setAllTitles(unique(res.items.map((v: any) => v.title)));
+        setAllLocations(unique(res.items.map((v: any) => v.location)));
+        setAllLevels(unique(res.items.map((v: any) => v.experience_level)));
+      } catch {}
+    };
+    fetchAllVacancies();
+  }, []);
+
   // Для фильтров (title, location, level) — собираем уникальные значения из вакансий
   const titles = useMemo(() => unique(vacancies.map((v: any) => v.title)), [vacancies]);
   const locations = useMemo(() => unique(vacancies.map((v: any) => v.location)), [vacancies]);
@@ -68,15 +84,15 @@ const JobSearch: React.FC = () => {
           <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Keyword" className="flex-1 min-w-[140px] rounded border border-black px-3 py-2 text-base bg-white placeholder-gray-600" />
           <select value={role} onChange={e => setRole(e.target.value)} className="min-w-[120px] rounded border border-black px-3 py-2 text-base bg-white">
             <option value="">All professions</option>
-            {titles.map(r => <option key={r} value={r}>{r}</option>)}
+            {allTitles.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
           <select value={level} onChange={e => setLevel(e.target.value)} className="min-w-[110px] rounded border border-black px-3 py-2 text-base bg-white">
             <option value="">All levels</option>
-            {levels.map(l => <option key={l} value={l}>{l}</option>)}
+            {allLevels.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
           <select value={location} onChange={e => setLocation(e.target.value)} className="min-w-[110px] rounded border border-black px-3 py-2 text-base bg-white">
             <option value="">All cities</option>
-            {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+            {allLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
           </select>
           <input value={salary} onChange={e => setSalary(e.target.value.replace(/\D/g, ''))} placeholder="Salary from" className="min-w-[100px] rounded border border-black px-3 py-2 text-base bg-white placeholder-gray-600" />
         </form>
@@ -110,7 +126,7 @@ const JobSearch: React.FC = () => {
                 <div key={job.id} className="bg-white rounded-xl shadow p-8 flex flex-wrap items-center gap-8">
                   <div className="flex-1 min-w-[200px]">
                     <div className="font-bold text-xl text-black mb-1">{job.title}</div>
-                    <div className="text-yellow-500 font-semibold mb-1">Team #{job.team_id}</div>
+                    <div className="text-yellow-500 font-semibold mb-1">Team {job.team_name}</div>
                     <div className="text-gray-700 text-sm mb-2">{job.location} • {job.experience_level} • {formatSalary(job.salary_min, job.salary_max)}</div>
                     <div className="mt-2 text-black">{job.requirements}</div>
                   </div>

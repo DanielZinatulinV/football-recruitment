@@ -87,7 +87,7 @@ const JobDetails: React.FC = () => {
         <h1 className="text-3xl font-extrabold text-black mb-2 uppercase">
           {job.title}
         </h1>
-        <div className="text-yellow-400 font-bold text-lg mb-2">Team #{job.team_id}</div>
+        <div className="text-yellow-400 font-bold text-lg mb-2">Team #{job.team_name}</div>
         <div className="text-gray-700 text-base mb-2">{job.location} • {job.experience_level} • {formatSalary(job.salary_min, job.salary_max)}</div>
         <div className="text-gray-400 text-sm mb-4">Published: {job.created_at?.slice(0,10)}</div>
         <div className="mb-6">

@@ -4,7 +4,7 @@ import {
   candidateSchema,
   type CandidateFormData,
 } from "../../schemas/candidate.schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Badge,
   Box,
@@ -27,15 +27,34 @@ import {
 import useRegisterCandidate from "./hooks/use-candidate";
 import { useNavigate } from "react-router-dom";
 import { AuthenticationService } from '../../api';
+import { MembershipsService } from '../../api/services/MembershipsService';
 
 const CandidateRegister = () => {
   const registerCandidate = useRegisterCandidate();
   const navigate = useNavigate();
-  const [selectedPlan, setSelectedPlan] = useState<"basic" | "pro" | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [plans, setPlans] = useState<any[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  useEffect(() => {
+    setPlansLoading(true);
+    MembershipsService.getMembershipPlansV1MembershipsPlansGet()
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setPlans(data);
+        } else if (data && Array.isArray(data.plans)) {
+          setPlans(data.plans);
+        } else {
+          setPlans([]);
+        }
+      })
+      .catch(() => setPlans([]))
+      .finally(() => setPlansLoading(false));
+  }, []);
 
   const methods = useForm<CandidateFormData>({
     resolver: zodResolver(candidateSchema),
@@ -59,13 +78,21 @@ const CandidateRegister = () => {
     const formValues = methods.getValues();
     const payload = {
       ...formValues,
-      selectedPlan,
+      selectedPlan: selectedPlan as "basic" | "premium" | "professional",
       paymentStatus: "unpaid" as const,
     };
     registerCandidate.mutate(payload, {
       onSuccess: () => {
         setError('');
-        navigate(`/verify-email?email=${encodeURIComponent(formValues.email)}`);
+        // Найти выбранный тариф
+        const plan = plans.find(p => p.plan === selectedPlan);
+        if (plan && plan.price > 0) {
+          // Платный тариф — после подтверждения email редирект на Stripe
+          navigate(`/verify-email?email=${encodeURIComponent(formValues.email)}&stripe=1`);
+        } else {
+          // Бесплатный тариф — просто подтверждение email
+          navigate(`/verify-email?email=${encodeURIComponent(formValues.email)}`);
+        }
       },
       onError: (err: any) => {
         let msg = 'Registration failed';
@@ -247,163 +274,63 @@ const CandidateRegister = () => {
                   sx={{ background: 'white', borderRadius: 2, borderColor: 'black' }}
         />
       </div>
-      <div className="space-y-2">
-        <Controller
-          name="cv"
-          control={methods.control}
-          render={({ field, fieldState }) => (
-            <div className="space-y-2">
-              <InputLabel htmlFor="cv">Upload CV</InputLabel>
-              <div
-                        className={`border-2 border-dashed border-black rounded-lg text-center transition-colors cursor-pointer ${isDragOver ? "border-yellow-400 bg-yellow-50" : "hover:border-yellow-400"}`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={() => setIsDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDragOver(false);
-                  const file = e.dataTransfer.files && e.dataTransfer.files[0];
-                  if (file) {
-                    const validTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-                    const validExts = [".pdf", ".doc", ".docx"];
-                    const fileName = file.name.toLowerCase();
-                    const isValid = validTypes.includes(file.type) || validExts.some(ext => fileName.endsWith(ext));
-                    if (!isValid) {
-                      setFileError("Only PDF, DOC, DOCX files are allowed.");
-                      return;
-                    }
-                    setFileError(null);
-                    field.onChange(file);
-                  }
-                }}
-              >
-                <input
-                  type="file"
-                  id="cv"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    if (file) {
-                      const validTypes = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-                      const validExts = [".pdf", ".doc", ".docx"];
-                      const fileName = file.name.toLowerCase();
-                      const isValid = validTypes.includes(file.type) || validExts.some(ext => fileName.endsWith(ext));
-                      if (!isValid) {
-                        setFileError("Only PDF, DOC, DOCX files are allowed.");
-                        return;
-                      }
-                      setFileError(null);
-                      field.onChange(file);
-                    } else {
-                      setFileError(null);
-                      field.onChange(null);
-                    }
-                  }}
-                  className="hidden"
-                />
-                <label htmlFor="cv" className="cursor-pointer p-6 block">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600">
-                    {field.value?.name
-                      ? field.value.name
-                      : "Click or drag and drop your CV (PDF, DOC, DOCX)"}
-                  </p>
-                </label>
-              </div>
-              {fileError && (
-                <p className="text-red-500 text-sm mt-1">{fileError}</p>
-              )}
-            </div>
-          )}
-        />
-      </div>
               <div className="bg-white rounded-2xl shadow p-6 mt-6">
                 <h3 className="font-semibold text-black mb-4 uppercase">Choose Your Membership</h3>
-      <div className="grid md:grid-cols-2 gap-6">
-        <Box
-                    className={`cursor-pointer transition-all duration-75 p-4 hover:shadow-lg ${selectedPlan === "basic" ? "ring-2 ring-yellow-400 shadow-lg" : "hover:shadow-lg"}`}
-          onClick={() => setSelectedPlan("basic")}
-        >
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-                        <span className="bg-yellow-100 text-yellow-800 border rounded-2xl px-3 border-yellow-100 text-xs font-bold uppercase">Most Popular</span>
-            </div>
-            <div className="text-xl">Basic Plan</div>
-                      <div className="text-3xl font-bold text-yellow-400">
-              $5<span className="text-sm text-gray-500">/month</span>
-            </div>
-                      <Typography className="text-[12px] text-gray-400 py-3">Perfect for getting started</Typography>
+        {plansLoading ? (
+          <div className="text-center text-gray-500">Loading plans...</div>
+        ) : plans.length === 0 ? (
+          <div className="text-center text-red-500">No plans available</div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {plans.map((plan) => (
+              <Box
+                key={plan.plan}
+                className={`cursor-pointer transition-all duration-75 p-4 hover:shadow-lg ${selectedPlan === plan.plan ? "ring-2 ring-yellow-400 shadow-lg" : "hover:shadow-lg"}`}
+                onClick={() => setSelectedPlan(plan.plan)}
+              >
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    {plan.plan === "basic" && (
+                      <span className="bg-yellow-100 text-yellow-800 border rounded-2xl px-3 border-yellow-100 text-xs font-bold uppercase">Most Popular</span>
+                    )}
+                    {plan.plan === "premium" && (
+                      <span className="bg-yellow-100 text-yellow-800 border rounded-2xl px-2 text-xs font-bold uppercase">Premium</span>
+                    )}
+                    {plan.plan === "professional" && (
+                      <span className="bg-yellow-100 text-yellow-800 border rounded-2xl px-2 text-xs font-bold uppercase">Pro</span>
+                    )}
+                  </div>
+                  <div className="text-xl capitalize">{plan.plan} Plan</div>
+                  <div className="text-3xl font-bold text-yellow-400">
+                    {plan.price === 0 ? 'Free' : `$${plan.price}`}<span className="text-sm text-gray-500">/month</span>
+                  </div>
+                  <Typography className="text-[12px] text-gray-400 py-3">
+                    {plan.features && plan.features.length > 0 ? plan.features[0] : ''}
+                  </Typography>
+                </div>
+                <div className="space-y-3">
+                  {plan.features && plan.features.map((feature: string, idx: number) => (
+                    <div className="flex items-center space-x-2" key={idx}>
+                      <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
+                      <span className="text-sm">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </Box>
+            ))}
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Profile visible to teams</span>
+        )}
+        {selectedPlan && plans.length > 0 && (
+          <div className="bg-white p-4 rounded-lg border border-black mt-4">
+            <h4 className="font-semibold mb-2">Payment Summary</h4>
+            <div className="flex justify-between items-center">
+              <span>{plans.find(p => p.plan === selectedPlan)?.plan || selectedPlan} Plan</span>
+              <span className="font-bold">{plans.find(p => p.plan === selectedPlan)?.price === 0 ? 'Free' : `$${plans.find(p => p.plan === selectedPlan)?.price}`}/month</span>
             </div>
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Apply to unlimited jobs</span>
-            </div>
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Basic profile analytics</span>
-            </div>
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Email notifications</span>
-            </div>
+            <p className="text-sm text-gray-600 mt-2">Your subscription will begin immediately after payment confirmation.</p>
           </div>
-        </Box>
-                  <Box
-                    className={`cursor-pointer transition-all duration-300 p-4 ${selectedPlan === "pro" ? "ring-2 ring-yellow-400 shadow-lg" : "hover:shadow-lg"}`}
-          onClick={() => setSelectedPlan("pro")}
-        >
-          <div className="text-center">
-            <div className="flex items-center justify-center mb-2">
-                        <span className="bg-yellow-100 text-yellow-800 border rounded-2xl px-2 text-xs font-bold uppercase">Pro</span>
-            </div>
-                      <div className="text-xl">Pro Plan</div>
-                      <div className="text-3xl font-bold text-yellow-400">
-              $10<span className="text-sm text-gray-500">/month</span>
-            </div>
-                      <Typography className="text-[12px] text-gray-400 py-3">For serious professionals</Typography>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Everything in Basic</span>
-            </div>
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Priority profile visibility</span>
-            </div>
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Advanced analytics</span>
-            </div>
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Direct messaging with teams</span>
-            </div>
-            <div className="flex items-center space-x-2">
-                        <CheckCircleOutline className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm">Career consultation calls</span>
-            </div>
-          </div>
-        </Box>
+        )}
       </div>
-      {selectedPlan && (
-                  <div className="bg-white p-4 rounded-lg border border-black mt-4">
-          <h4 className="font-semibold mb-2">Payment Summary</h4>
-          <div className="flex justify-between items-center">
-            <span>{selectedPlan === "basic" ? "Basic Plan" : "Pro Plan"}</span>
-                      <span className="font-bold">${selectedPlan === "basic" ? "5" : "10"}/month</span>
-          </div>
-                    <p className="text-sm text-gray-600 mt-2">Your subscription will begin immediately after payment confirmation.</p>
-        </div>
-      )}
-              </div>
               {error && (
                 <div className="text-red-500 text-center font-semibold text-base mb-2">{error}</div>
               )}

@@ -10,6 +10,7 @@ import type { Token } from '../models/Token';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
+import type { UpdateUserSchema } from '../models/UpdateUserSchema';
 export class AuthenticationService {
     /**
      * Register Candidate
@@ -102,6 +103,25 @@ export class AuthenticationService {
                 'email': email,
                 'code': code,
             },
+            errors: {
+                422: `Validation Error`,
+            },
+        });
+    }
+    /**
+     * Update User Profile
+     * @param requestBody
+     * @returns OutUserSchema Successful Response
+     * @throws ApiError
+     */
+    public static updateUserProfileV1AuthProfilePatch(
+        requestBody: UpdateUserSchema,
+    ): CancelablePromise<OutUserSchema> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/v1/auth/profile',
+            body: requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: `Validation Error`,
             },

@@ -8,6 +8,7 @@ import ApplicationCard from "./components/ApplicationCard";
 import { mockCandidates, uniquePositions, uniqueLocations, minExp, maxExp } from "./utils/candidateMock";
 import type { Vacancy, Candidate, Application } from "./types/team-dashboard.types";
 import { useTeamDashboardData } from "./hooks/useTeamDashboardData";
+import { CandidatesService } from "../../api/services/CandidatesService";
 
 const TeamDashboard = () => {
   const navigate = useNavigate();
@@ -41,6 +42,17 @@ const TeamDashboard = () => {
     }
   }, [authStatus, navigate]);
 
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [candidatesError, setCandidatesError] = useState<string | null>(null);
+
+  // Формируем уникальные значения для фильтров
+  const uniquePositions = Array.from(new Set(candidates.map((c: any) => c.position).filter(Boolean)));
+  const uniqueLocations = Array.from(new Set(candidates.map((c: any) => c.location).filter(Boolean)));
+  const expArr = candidates.map((c: any) => Number(c.experience_level) || 0);
+  const minExp = expArr.length ? Math.min(...expArr) : 0;
+  const maxExp = expArr.length ? Math.max(...expArr) : 20;
+
   const [candidateFilters, setCandidateFilters] = useState<{
     name: string;
     position: string;
@@ -55,15 +67,51 @@ const TeamDashboard = () => {
     skills: '',
   });
 
-  const filteredCandidates = mockCandidates.filter(c => {
-    const matchesName = candidateFilters.name === '' || (`${c.firstName} ${c.lastName}`.toLowerCase().includes(candidateFilters.name.toLowerCase()));
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      setCandidatesLoading(true);
+      setCandidatesError(null);
+      try {
+        const res = await CandidatesService.searchCandidatesV1CandidatesGet(
+          undefined, // role
+          candidateFilters.location || undefined,
+          undefined, // experienceLevel (можно добавить при необходимости)
+          candidateFilters.position || undefined,
+          100, // limit
+          0
+        );
+        setCandidates(res.items || []);
+      } catch (e: any) {
+        setCandidatesError(e?.body?.detail || e?.message || 'Error loading candidates');
+      } finally {
+        setCandidatesLoading(false);
+      }
+    };
+    fetchCandidates();
+  }, [candidateFilters.location, candidateFilters.position]);
+
+  // Фильтрация кандидатов по фильтрам
+  const filteredCandidates = candidates.filter((c: any) => {
+    const matchesName = candidateFilters.name === '' || (`${c.first_name} ${c.last_name}`.toLowerCase().includes(candidateFilters.name.toLowerCase()));
     const matchesPosition = candidateFilters.position === '' || c.position === candidateFilters.position;
-    const exp = Number(c.experience);
+    const exp = Number(c.experience_level) || 0;
     const matchesExperience = exp >= candidateFilters.experienceRange[0] && exp <= candidateFilters.experienceRange[1];
     const matchesLocation = candidateFilters.location === '' || c.location === candidateFilters.location;
-    const matchesSkills = candidateFilters.skills === '' || (c.skills && c.skills.toLowerCase().includes(candidateFilters.skills.toLowerCase()));
+    const matchesSkills = candidateFilters.skills === '' || (c.qualification && c.qualification.toLowerCase().includes(candidateFilters.skills.toLowerCase()));
     return matchesName && matchesPosition && matchesExperience && matchesLocation && matchesSkills;
   });
+
+  // Преобразование OutUserSchema -> Candidate для CandidateCard
+  const mappedCandidates = filteredCandidates.map((c: any) => ({
+    id: c.id,
+    firstName: c.first_name,
+    lastName: c.last_name,
+    position: c.position || '',
+    experience: c.experience_level || '',
+    location: c.location || '',
+    skills: c.qualification || '',
+    selectedPlan: c.selectedPlan || '',
+  }));
 
   return (
     <div className="min-h-screen bg-black pt-16">
@@ -179,45 +227,6 @@ const TeamDashboard = () => {
           )}
         </section>
 
-      {/* Accepted Candidates Section */}
-      <section className="bg-white py-12 px-8">
-        <h2 className="text-3xl font-bold text-black mb-8 uppercase">Accepted Candidates</h2>
-        {applicationsLoading ? (
-          <div className="text-gray-700 mb-4">Loading accepted candidates...</div>
-        ) : (
-          (() => {
-            const accepted = applications.filter(app => app.status === 'accepted');
-            if (accepted.length === 0) {
-              return <div className="text-gray-700 mb-4">No accepted candidates yet.</div>;
-            }
-            return (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white rounded-xl shadow">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 text-left">Name</th>
-                      <th className="px-4 py-2 text-left">Vacancy</th>
-                      <th className="px-4 py-2 text-left">Experience</th>
-                      <th className="px-4 py-2 text-left">Location</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {accepted.map(app => (
-                      <tr key={app.id} className="border-t">
-                        <td className="px-4 py-2">{app.candidate?.first_name} {app.candidate?.last_name}</td>
-                        <td className="px-4 py-2">{app.vacancy?.role}</td>
-                        <td className="px-4 py-2">{app.candidate?.experience_level || '-'}</td>
-                        <td className="px-4 py-2">{app.candidate?.location || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })()
-        )}
-      </section>
-
       {/* Divider */}
       <div className="w-full h-6 bg-black" style={{ transform: 'skewY(3deg)' }}></div>
 
@@ -233,10 +242,14 @@ const TeamDashboard = () => {
             maxExp={maxExp}
           />
           <div className="flex flex-col gap-5">
-            {filteredCandidates.length === 0 ? (
+            {candidatesLoading ? (
+            <div className="text-gray-700 bg-white rounded-xl p-10 text-center">Loading candidates...</div>
+            ) : candidatesError ? (
+            <div className="text-red-500 bg-white rounded-xl p-10 text-center">{candidatesError}</div>
+            ) : mappedCandidates.length === 0 ? (
             <div className="text-gray-700 bg-white rounded-xl p-10 text-center">No candidates found</div>
             ) : (
-              filteredCandidates.map(c => (
+              mappedCandidates.map(c => (
                 <CandidateCard
                   key={c.id}
                   candidate={c}
