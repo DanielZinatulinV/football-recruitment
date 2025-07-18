@@ -53,7 +53,7 @@ const Navbar: React.FC = () => {
       <div className=" mx-auto px-8 h-16 flex items-center justify-between">
         {/* Логотип */}
         <a href={user ? "/dashboard" : "/"} onClick={handleLogoClick} className="font-extrabold text-2xl text-yellow-300 tracking-tight no-underline uppercase mr-8" style={{ letterSpacing: 0 }}>
-          FootballRecruitment
+          Footy
         </a>
         {/* Навигация */}
         <div className="hidden md:flex flex-1 items-center justify-between">
