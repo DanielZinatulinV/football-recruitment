@@ -191,7 +191,16 @@ export default function HomePage() {
 
       {/* Latest Jobs Section */}
       <section className="w-full max-w-4xl mx-auto pb-16 px-4">
-        <h2 className="text-2xl font-bold text-white mb-8 uppercase text-center tracking-wide">Latest Jobs</h2>
+        <motion.h2 
+          className="text-2xl font-bold text-white mb-8 uppercase text-center tracking-wide"
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          Latest Jobs
+        </motion.h2>
+        
         {loading ? (
           <div className="text-center text-yellow-300 py-8 text-lg">Загрузка вакансий...</div>
         ) : error ? (
@@ -199,38 +208,125 @@ export default function HomePage() {
         ) : jobs.length === 0 ? (
           <div className="text-center text-gray-400 py-8 text-lg">Вакансии не найдены</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Левая колонка */}
-            <div className="flex flex-col gap-6">
-              {leftJobs.slice(0, 3).map((job) => (
-                <div
-                  key={job.id + '-left'}
-                  className="bg-white rounded-xl shadow p-6 flex flex-col gap-2"
-                >
-                  <div className="font-bold text-lg text-black">{job.title}</div>
-                  <div className="text-yellow-400 font-semibold">{job.team_name || job.club || 'Клуб не указан'}</div>
-                  <div className="text-gray-700 text-sm line-clamp-2">{job.location}</div>
+          <div className="relative">
+            {/* Fixed height container to prevent button jumping */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ minHeight: `${columnHeight}px` }}>
+              {/* Левая колонка - Carousel */}
+              <div className="relative">
+                <div className="mt-6">
+                  <AnimatePresence mode="popLayout">
+                    {visibleLeft.map((job, index) => (
+                      <motion.div
+                        key={`${job.id}-left-${leftIdx}-${index}`}
+                        className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-2 mb-6 border-l-4 border-yellow-300 relative z-0"
+                        initial={{ 
+                          opacity: 0, 
+                          y: index === 0 ? -120 : 0,
+                          scale: index === 0 ? 0.9 : 1
+                        }}
+                        animate={{ 
+                          opacity: 1, 
+                          y: 0,
+                          scale: 1
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          y: 120,
+                          scale: 0.9,
+                          transition: { duration: 0.3 }
+                        }}
+                        transition={{ 
+                          duration: 0.5,
+                          ease: "easeOut",
+                          delay: index * 0.1
+                        }}
+                        whileHover={{ 
+                          scale: 1.02,
+                          boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                          zIndex: 10
+                        }}
+                        style={{ transformOrigin: 'center center' }}
+                      >
+                        <div className="font-bold text-lg text-black">{job.title}</div>
+                        <div className="text-yellow-600 font-semibold flex items-center gap-2">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                          {job.team_name || job.club || 'Клуб не указан'}
+                        </div>
+                        <div className="text-gray-700 text-sm line-clamp-2">{job.location}</div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          {index === 0 ? 'Just posted' : `${(index + 1) * 2} min ago`}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              ))}
+              </div>
+              
+              {/* Правая колонка - Carousel */}
+              <div className="relative">
+                <div className="mt-6">
+                  <AnimatePresence mode="popLayout">
+                    {visibleRight.map((job, index) => (
+                      <motion.div
+                        key={`${job.id}-right-${rightIdx}-${index}`}
+                        className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-2 mb-6 border-l-4 border-yellow-300 relative z-0"
+                        initial={{ 
+                          opacity: 0, 
+                          y: index === 0 ? -120 : 0,
+                          scale: index === 0 ? 0.9 : 1
+                        }}
+                        animate={{ 
+                          opacity: 1, 
+                          y: 0,
+                          scale: 1
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          y: 120,
+                          scale: 0.9,
+                          transition: { duration: 0.3 }
+                        }}
+                        transition={{ 
+                          duration: 0.5,
+                          ease: "easeOut",
+                          delay: index * 0.1
+                        }}
+                        whileHover={{ 
+                          scale: 1.02,
+                          boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+                          zIndex: 10
+                        }}
+                        style={{ transformOrigin: 'center center' }}
+                      >
+                        <div className="font-bold text-lg text-black">{job.title}</div>
+                        <div className="text-yellow-600 font-semibold flex items-center gap-2">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                          {job.team_name || job.club || 'Клуб не указан'}
+                        </div>
+                        <div className="text-gray-700 text-sm line-clamp-2">{job.location}</div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          {index === 0 ? 'Just posted' : `${(index + 1) * 3} min ago`}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
-            {/* Правая колонка */}
-            <div className="flex flex-col gap-6">
-              {rightJobs.slice(0, 3).map((job) => (
-                <div
-                  key={job.id + '-right'}
-                  className="bg-white rounded-xl shadow p-6 flex flex-col gap-2"
-                >
-                  <div className="font-bold text-lg text-black">{job.title}</div>
-                  <div className="text-yellow-400 font-semibold">{job.team_name || job.club || 'Клуб не указан'}</div>
-                  <div className="text-gray-700 text-sm line-clamp-2">{job.location}</div>
-                </div>
-              ))}
+            
+            {/* Fixed position button */}
+            <div className="flex justify-center mt-8">
+              <motion.a 
+                href="/jobs" 
+                className="px-8 py-3 rounded-lg bg-yellow-300 text-black font-bold text-lg uppercase shadow-lg hover:bg-yellow-400 transition-all duration-200 transform hover:scale-105"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                See All Jobs
+              </motion.a>
             </div>
           </div>
         )}
-        <div className="flex justify-center mt-8">
-          <a href="/jobs" className="px-8 py-3 rounded-lg bg-yellow-300 text-black font-bold text-lg uppercase shadow hover:bg-yellow-400 transition">See All Jobs</a>
-        </div>
       </section>
     </div>
   );

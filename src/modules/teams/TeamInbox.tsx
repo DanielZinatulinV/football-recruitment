@@ -10,15 +10,15 @@ const initialDialogs = [
     id: 1,
     candidateId: 1,
     messages: [
-      { id: 1, sender: 'team', text: 'Здравствуйте, Анна!', timestamp: Date.now() - 86400000, read: true },
-      { id: 2, sender: 'candidate', text: 'Добрый день! Готова обсудить вакансию.', timestamp: Date.now() - 86000000, read: true },
+      { id: 1, sender: 'team', text: 'Hello, Anna!', timestamp: Date.now() - 86400000, read: true },
+      { id: 2, sender: 'candidate', text: 'Good afternoon! Ready to discuss the vacancy.', timestamp: Date.now() - 86000000, read: true },
     ],
   },
   {
     id: 2,
     candidateId: 2,
     messages: [
-      { id: 1, sender: 'candidate', text: 'Здравствуйте! Я заинтересован в вашей вакансии.', timestamp: Date.now() - 7200000, read: false },
+      { id: 1, sender: 'candidate', text: 'Hello! I am interested in your vacancy.', timestamp: Date.now() - 7200000, read: false },
     ],
   },
 ];
@@ -64,14 +64,14 @@ const TeamInbox = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-blue-100 py-8">
       <div className="container mx-auto max-w-4xl px-4">
         <button className="mb-6 px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300" onClick={() => navigate('/team/dashboard')}>
-          ← Назад к Dashboard
+          Back to Dashboard ←
         </button>
         <div className="bg-white rounded-xl shadow-lg flex overflow-hidden min-h-[500px]">
           {/* Список диалогов */}
           <div className="w-1/3 border-r p-4 bg-gray-50">
-            <h2 className="text-lg font-bold mb-4">Диалоги</h2>
+            <h2 className="text-lg font-bold mb-4">Dialogs</h2>
             <div className="flex flex-col gap-2">
-              {dialogs.length === 0 && <div className="text-gray-400">Нет диалогов</div>}
+              {dialogs.length === 0 && <div className="text-gray-400">No dialogs</div>}
               {dialogs.map(d => {
                 const cand = mockCandidates.find(c => c.id === d.candidateId);
                 const lastMsg = d.messages[d.messages.length - 1];
@@ -82,9 +82,9 @@ const TeamInbox = () => {
                     className={`rounded-lg px-3 py-2 cursor-pointer flex flex-col border transition ${selectedId === d.id ? 'bg-blue-100 border-blue-400' : 'bg-white border-gray-200 hover:bg-blue-50'}`}
                     onClick={() => setSelectedId(d.id)}
                   >
-                    <div className="font-semibold">{cand ? `${cand.firstName} ${cand.lastName}` : 'Кандидат'}</div>
+                    <div className="font-semibold">{cand ? `${cand.firstName} ${cand.lastName}` : 'Candidate'}</div>
                     <div className="text-xs text-gray-500 truncate">{lastMsg?.text}</div>
-                    {unread && <span className="text-xs text-amber-500 font-bold">Непрочитанные</span>}
+                    {unread && <span className="text-xs text-amber-500 font-bold">Unread</span>}
                   </div>
                 );
               })}
@@ -96,7 +96,7 @@ const TeamInbox = () => {
               <>
                 <div className="flex items-center justify-between border-b px-6 py-4">
                   <div className="font-bold text-blue-700">{candidate.firstName} {candidate.lastName}</div>
-                  <button className="text-red-500 hover:underline text-sm" onClick={() => handleDelete(selectedDialog.id)}>Удалить диалог</button>
+                  <button className="text-red-500 hover:underline text-sm" onClick={() => handleDelete(selectedDialog.id)}>Delete dialog</button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 bg-gray-50">
                   {selectedDialog.messages.map(m => (
@@ -114,19 +114,19 @@ const TeamInbox = () => {
                     className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-base"
                     value={input}
                     onChange={e => setInput(e.target.value)}
-                    placeholder="Введите сообщение..."
+                    placeholder="Enter a message..."
                     onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
                   />
                   <button
                     className="rounded-lg px-5 py-2 bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
                     onClick={handleSend}
                   >
-                    Отправить
+                    Send
                   </button>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">Выберите диалог</div>
+              <div className="flex-1 flex items-center justify-center text-gray-400">Select a dialog</div>
             )}
           </div>
         </div>

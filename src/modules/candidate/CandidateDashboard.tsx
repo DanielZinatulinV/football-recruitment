@@ -165,45 +165,117 @@ const CandidateDashboard: React.FC = () => {
 
       {/* Profile Section */}
       <section className="bg-black py-12 px-8">
-        <h2 className="text-3xl font-bold text-yellow-300 mb-8 uppercase">Candidate Profile</h2>
-        {!user ? (
-          <div className="text-red-500">Not authenticated</div>
-        ) : profile ? (
-          <div className="flex flex-wrap gap-10 items-center">
-            <div className="space-y-2 text-white text-lg">
-              <div><b>Name:</b> {profile.name}</div>
-              <div><b>Profession:</b> {profile.role}</div>
-              <div><b>Experience:</b> {profile.experience}</div>
-              <div><b>Location:</b> {profile.location}</div>
-              <div><b>Qualifications:</b> {profile.qualifications}</div>
-              <div><b>Subscription:</b> {profile.subscription}</div>
-              <div><b>CV:</b> {profile.cv ? <a href={profile.cv} className="text-yellow-300 underline" target="_blank" rel="noopener noreferrer">Download CV</a> : <span className="text-gray-400">Not uploaded</span>}</div>
-              <div className="mt-2">
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  id="cv-upload"
-                  style={{ display: 'none' }}
-                  onChange={handleCvUpload}
-                  disabled={cvUploading}
-                  ref={fileInputRef}
-                />
-                <button
-                  type="button"
-                  className="rounded px-4 py-2 bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition"
-                  disabled={cvUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >{cvUploading ? 'Uploading...' : (profile.cv ? 'Update CV' : 'Upload CV')}</button>
-                {cvError && <div className="text-red-500 text-sm mt-1">{cvError}</div>}
-                {cvSuccess && <div className="text-green-500 text-sm mt-1">{cvSuccess}</div>}
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-yellow-300 mb-12 uppercase text-center">Candidate Profile</h2>
+          {!user ? (
+            <div className="text-red-500 text-center">Not authenticated</div>
+          ) : profile ? (
+            <div className="bg-black/80 rounded-2xl p-8 shadow-2xl border border-yellow-300/20">
+              {/* Profile Header */}
+              <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 mb-8">
+                {/* Avatar/Initial Circle */}
+                <div className="flex-shrink-0">
+                  <div className="w-24 h-24 bg-yellow-300 rounded-full flex items-center justify-center">
+                    <span className="text-3xl font-bold text-black">
+                      {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Main Profile Info */}
+                <div className="flex-grow text-center lg:text-left">
+                  <h3 className="text-2xl font-bold text-white mb-2">{profile.name || 'Unknown User'}</h3>
+                  <p className="text-yellow-300 text-lg mb-1">{profile.role || 'No profession specified'}</p>
+                  <p className="text-gray-300">{profile.location || 'Location not specified'}</p>
+                </div>
+                
+                {/* Action Button */}
+                <div className="flex-shrink-0">
+                  <button 
+                    className="bg-yellow-300 text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    onClick={() => navigate('/candidate/profile/edit')}
+                  >
+                    Edit Profile
+                  </button>
+                </div>
+              </div>
+              
+              {/* Profile Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Experience</div>
+                  <div className="text-white text-lg">{profile.experience || 'Not specified'}</div>
+                </div>
+                
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Qualifications</div>
+                  <div className="text-white text-lg">{profile.qualifications || 'Not specified'}</div>
+                </div>
+                
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Subscription</div>
+                  <div className="text-white text-lg">
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-sm font-medium ${
+                      profile.subscription === 'Active' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {profile.subscription}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* CV Section */}
+              <div className="bg-black/80 rounded-lg p-6 border border-yellow-300/20">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-yellow-300/20 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-yellow-300 font-semibold">CV Document</div>
+                      <div className="text-gray-300 text-sm">
+                        {profile.cv ? (
+                          <a href={profile.cv} className="text-yellow-300 hover:text-yellow-400 underline" target="_blank" rel="noopener noreferrer">
+                            Download Current CV
+                          </a>
+                        ) : (
+                          'No CV uploaded yet'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col items-center gap-2">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      id="cv-upload"
+                      style={{ display: 'none' }}
+                      onChange={handleCvUpload}
+                      disabled={cvUploading}
+                      ref={fileInputRef}
+                    />
+                    <button
+                      type="button"
+                      className="bg-yellow-300 text-black font-semibold px-4 py-2 rounded-lg hover:bg-yellow-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={cvUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {cvUploading ? 'Uploading...' : (profile.cv ? 'Update CV' : 'Upload CV')}
+                    </button>
+                    {cvError && <div className="text-red-400 text-sm text-center">{cvError}</div>}
+                    {cvSuccess && <div className="text-green-400 text-sm text-center">{cvSuccess}</div>}
+                  </div>
+                </div>
               </div>
             </div>
-            <button className="rounded px-6 py-3 bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition" onClick={() => navigate('/candidate/profile/edit')}>
-              Edit Profile
-            </button>
-          </div>
-        ) : null}
-        </section>
+          ) : null}
+        </div>
+      </section>
 
       {/* Divider */}
       <div className="w-full h-6 bg-yellow-300" style={{ transform: 'skewY(-3deg)' }}></div>

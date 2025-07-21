@@ -159,38 +159,97 @@ const TeamDashboard = () => {
 
       {/* Team Profile Section */}
       <section className="bg-black py-12 px-8">
-        <h2 className="text-3xl font-bold text-yellow-300 mb-8 uppercase">Team Profile</h2>
-        {authStatus === 'pending' ? (
-          <div className="text-yellow-300 text-lg font-bold">Loading profile...</div>
-        ) : !user ? (
-          <div className="text-red-500 text-lg font-bold">Not authenticated</div>
-        ) : user.role !== 'team' ? (
-          <div className="text-red-500 text-lg font-bold">Not a team user.</div>
-        ) : (
-          <div className="flex flex-wrap gap-10 items-center">
-            <div className="space-y-2 text-white text-lg">
-              <div><b>Team Name:</b> {user.club_name || (user.first_name + ' ' + user.last_name)}</div>
-              <div><b>Email:</b> {user.email}</div>
-              <div><b>Location:</b> {user.location || '-'}</div>
-              <div><b>Contact Phone:</b> {user.contact_phone || '-'}</div>
-              <div><b>Status:</b> {user.is_active ? 'Active' : 'Inactive'}</div>
-              <div><b>Approved:</b> {user.is_approved ? 'Yes' : 'No'}</div>
-              <div><b>Email Verified:</b> {user.email_verified ? 'Yes' : 'No'}</div>
-            </div>
-            {/* Логотип, если есть */}
-            {user.logo_file_path && (
-              <div className="ml-auto">
-                <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                  <img src={user.logo_file_path} alt="Logo" className="object-cover w-full h-full" />
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-yellow-300 mb-12 uppercase text-center">Team Profile</h2>
+          {authStatus === 'pending' ? (
+            <div className="text-yellow-300 text-lg font-bold">Loading profile...</div>
+          ) : !user ? (
+            <div className="text-red-500 text-lg font-bold">Not authenticated</div>
+          ) : user.role !== 'team' ? (
+            <div className="text-red-500 text-lg font-bold">Not a team user.</div>
+          ) : (
+            <div className="bg-black/80 rounded-2xl p-8 shadow-2xl border border-yellow-300/20">
+              {/* Profile Header */}
+              <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 mb-8">
+                {/* Logo/Initial Circle */}
+                <div className="flex-shrink-0">
+                  {user.logo_file_path ? (
+                    <div className="w-24 h-24 rounded-full bg-yellow-300 flex items-center justify-center overflow-hidden">
+                      <img src={user.logo_file_path} alt="Logo" className="object-cover w-full h-full" />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 bg-yellow-300 rounded-full flex items-center justify-center">
+                      <span className="text-3xl font-bold text-black">
+                        {(user.club_name || user.first_name || 'U').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {/* Main Profile Info */}
+                <div className="flex-grow text-center lg:text-left">
+                  <h3 className="text-2xl font-bold text-white mb-2">{user.club_name || (user.first_name + ' ' + user.last_name) || 'Unknown Team'}</h3>
+                  <p className="text-yellow-300 text-lg mb-1">{user.email}</p>
+                  <p className="text-gray-300">{user.location || 'Location not specified'}</p>
+                </div>
+                {/* Action Button */}
+                <div className="flex-shrink-0">
+                  <button
+                    className="bg-yellow-300 text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    onClick={() => navigate('/team/profile/edit')}
+                  >
+                    Edit Profile
+                  </button>
                 </div>
               </div>
-            )}
-            <button className="rounded px-6 py-3 bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition" onClick={() => navigate('/team/profile/edit')}>
-              Edit Profile
-            </button>
-          </div>
-        )}
-        </section>
+              {/* Profile Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Contact Phone</div>
+                  <div className="text-white text-lg">{user.contact_phone || 'Not specified'}</div>
+                </div>
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Status</div>
+                  <div className="text-white text-lg">
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-sm font-medium ${
+                      user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Approved</div>
+                  <div className="text-white text-lg">
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-sm font-medium ${
+                      user.is_approved ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.is_approved ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Email Verified</div>
+                  <div className="text-white text-lg">
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-sm font-medium ${
+                      user.email_verified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.email_verified ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Email</div>
+                  <div className="text-white text-lg">{user.email}</div>
+                </div>
+                <div className="bg-black/80 rounded-lg p-4 border border-yellow-300/10">
+                  <div className="text-yellow-300 text-sm font-semibold mb-1">Location</div>
+                  <div className="text-white text-lg">{user.location || 'Not specified'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Divider */}
       <div className="w-full h-6 bg-yellow-300" style={{ transform: 'skewY(-3deg)' }}></div>
@@ -203,7 +262,7 @@ const TeamDashboard = () => {
           <div className="text-gray-700 mb-4">No vacancies yet.</div>
           ) : (
             <div className="flex flex-col gap-4 mb-4">
-              {vacancies.map(vac => (
+              {vacancies.slice(0, 20).map(vac => (
                 <VacancyCard
                   key={vac.id}
                   vacancy={vac}

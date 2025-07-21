@@ -28,9 +28,6 @@ const VacancyCard: React.FC<VacancyCardProps> = ({ vacancy, onEdit, onClose, onO
           {locationStr && <>Location: {locationStr} | </>}
           Expiry: {vacancy.expiry}
         </div>
-        <div className="text-xs mt-1">
-          Статус: <span className="font-bold">{vacancy.status}</span>
-        </div>
       </div>
       <div className="flex gap-2 mt-4">
         <button className="px-4 py-2 rounded bg-yellow-300 text-black font-bold hover:bg-yellow-400 transition" onClick={() => onEdit(vacancy)}>Edit</button>
@@ -38,7 +35,7 @@ const VacancyCard: React.FC<VacancyCardProps> = ({ vacancy, onEdit, onClose, onO
           vacancy.status === 'active' ? (
             <button className="px-4 py-2 rounded bg-black text-yellow-300 font-bold hover:bg-yellow-400 hover:text-black transition" onClick={() => onClose(vacancy.id)}>Close</button>
           ) : (
-            <button className="px-4 py-2 rounded bg-green-500 text-white font-bold hover:bg-green-600 transition" onClick={() => onActivate(vacancy.id)}>Открыть</button>
+            <button className="px-4 py-2 rounded bg-green-500 text-white font-bold hover:bg-green-600 transition" onClick={() => onActivate(vacancy.id)}>Open</button>
           )
         )}
         {vacancy.status !== 'draft' ? (
